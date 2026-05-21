@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AosProvider } from "@/components/aos-provider";
 import "./globals.css";
 import Navbar from "@/components/compiled-ui/Navbar";
 
@@ -39,9 +40,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TooltipProvider>
-            <Navbar />
-
-            {children}
+            <AosProvider>
+              <Navbar />
+              {children}
+            </AosProvider>
           </TooltipProvider>
         </ThemeProvider>
       </body>
