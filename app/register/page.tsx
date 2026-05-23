@@ -11,9 +11,8 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import Link from "next/link";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-4 font-sans">
       <Card
@@ -29,7 +28,7 @@ export default function LoginPage() {
           data-aos-delay="100"
           data-aos-offset="0"
         >
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
+          <CardTitle className="text-2xl">Create an account</CardTitle>
           <CardDescription>
             Authentication is coming soon. This is a preview.
           </CardDescription>
@@ -47,7 +46,19 @@ export default function LoginPage() {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" placeholder="••••••••" />
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="confirm">Confirm Password</Label>
+            <Input
+              id="confirm"
+              type="password"
+              placeholder="••••••••"
+            />
           </div>
         </CardContent>
         <CardFooter
@@ -58,16 +69,10 @@ export default function LoginPage() {
           data-aos-offset="0"
         >
           <Button className="w-full" disabled>
-            Sign In
+            Create Account
           </Button>
           <p className="text-sm text-muted-foreground text-center">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="underline underline-offset-2 hover:text-foreground"
-            >
-              Register
-            </Link>
+            Registration is not yet available. Check back later.
           </p>
         </CardFooter>
       </Card>

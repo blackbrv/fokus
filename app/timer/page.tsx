@@ -30,10 +30,6 @@ export default function TimerPage() {
     addOpen,
     editOpen,
     editingTask,
-    dialogTitle,
-    dialogNote,
-    setDialogTitle,
-    setDialogNote,
     openAdd,
     closeAdd,
     handleAddSave,
@@ -197,10 +193,6 @@ export default function TimerPage() {
       {addOpen && (
         <TaskDialog
           heading="Add Task"
-          taskTitle={dialogTitle}
-          taskNote={dialogNote}
-          onTitleChange={setDialogTitle}
-          onNoteChange={setDialogNote}
           onSave={handleAddSave}
           onCancel={closeAdd}
         />
@@ -210,10 +202,7 @@ export default function TimerPage() {
       {editOpen && editingTask && (
         <TaskDialog
           heading="Edit Task"
-          taskTitle={dialogTitle}
-          taskNote={dialogNote}
-          onTitleChange={setDialogTitle}
-          onNoteChange={setDialogNote}
+          defaultValues={{ title: editingTask.title, note: editingTask.note }}
           onSave={handleEditSave}
           onCancel={closeEdit}
         />
