@@ -1,79 +1,89 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
-import { type Task } from "./shared";
+import { toast } from "sonner";
+import { type Task, STORAGE_KEY } from "./shared";
+
+function loadTasks(): Task[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Task[]) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(loadTasks);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
 
   // ── Dialog state ──────────────────────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [dialogTitle, setDialogTitle] = useState("");
-  const [dialogNote, setDialogNote] = useState("");
 
   // ── Add ───────────────────────────────────────────────────────────────────
-  const openAdd = () => {
-    setDialogTitle("");
-    setDialogNote("");
-    setAddOpen(true);
-  };
+  const openAdd = () => setAddOpen(true);
 
-  const closeAdd = () => {
-    setDialogTitle("");
-    setDialogNote("");
-    setAddOpen(false);
-  };
+  const closeAdd = () => setAddOpen(false);
 
-  const handleAddSave = () => {
-    if (!dialogTitle.trim()) return;
+  const handleAddSave = (data: { title: string; note?: string }) => {
     setTasks((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
-        title: dialogTitle.trim(),
-        note: dialogNote.trim(),
+        title: data.title.trim(),
+        note: (data.note ?? "").trim(),
         completed: false,
       },
     ]);
+    toast.success("Task added");
     closeAdd();
   };
 
   // ── Edit ──────────────────────────────────────────────────────────────────
   const openEdit = (task: Task) => {
     setEditingTask(task);
-    setDialogTitle(task.title);
-    setDialogNote(task.note);
     setEditOpen(true);
   };
 
   const closeEdit = () => {
     setEditingTask(null);
-    setDialogTitle("");
-    setDialogNote("");
     setEditOpen(false);
   };
 
-  const handleEditSave = () => {
-    if (!editingTask || !dialogTitle.trim()) return;
+  const handleEditSave = (data: { title: string; note?: string }) => {
+    if (!editingTask) return;
     setTasks((prev) =>
       prev.map((t) =>
         t.id === editingTask.id
-          ? { ...t, title: dialogTitle.trim(), note: dialogNote.trim() }
+          ? { ...t, title: data.title.trim(), note: (data.note ?? "").trim() }
           : t,
       ),
     );
+    toast.success("Task updated");
     closeEdit();
   };
 
   // ── Complete / Delete / Reorder ───────────────────────────────────────────
   const toggleComplete = (id: string) =>
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
-    );
+    setTasks((prev) => {
+      const task = prev.find((t) => t.id === id);
+      if (task) {
+        toast(task.completed ? "Marked incomplete" : "Marked complete");
+      }
+      return prev.map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t,
+      );
+    });
 
-  const deleteTask = (id: string) =>
+  const deleteTask = (id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
+    toast("Task deleted");
+  };
 
   const reorderTasks = (activeId: string, overId: string) =>
     setTasks((prev) => {
@@ -91,10 +101,6 @@ export function useTasks() {
     addOpen,
     editOpen,
     editingTask,
-    dialogTitle,
-    dialogNote,
-    setDialogTitle,
-    setDialogNote,
     openAdd,
     closeAdd,
     handleAddSave,

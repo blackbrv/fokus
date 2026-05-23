@@ -19,6 +19,8 @@ export const MODE_LABELS: Record<TimerMode, string> = {
   "long-break": "Long Break",
 };
 
+export const STORAGE_KEY = "fokus-tasks";
+
 export function fmt(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
