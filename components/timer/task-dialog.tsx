@@ -1,30 +1,46 @@
 "use client";
 
 import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+
+const taskFormSchema = z.object({
+  title: z.string().min(1, "Task title is required"),
+  note: z.string().optional(),
+});
+
+type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskDialogProps {
   heading: string;
-  taskTitle: string;
-  taskNote: string;
-  onTitleChange: (v: string) => void;
-  onNoteChange: (v: string) => void;
-  onSave: () => void;
+  defaultValues?: TaskFormData;
+  onSave: (data: TaskFormData) => void;
   onCancel: () => void;
 }
 
 export function TaskDialog({
   heading,
-  taskTitle,
-  taskNote,
-  onTitleChange,
-  onNoteChange,
+  defaultValues = { title: "", note: "" },
   onSave,
   onCancel,
 }: TaskDialogProps) {
+  const form = useForm<TaskFormData>({
+    resolver: zodResolver(taskFormSchema),
+    defaultValues,
+  });
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
@@ -32,6 +48,8 @@ export function TaskDialog({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onCancel]);
+
+  const handleSubmit = form.handleSubmit(onSave);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -58,50 +76,74 @@ export function TaskDialog({
         <div className="h-px bg-foreground/10" />
 
         {/* Body */}
-        <div className="flex flex-col gap-5 px-8 pt-6 pb-8">
-          <div className="flex flex-col gap-2">
-            <Label className="text-sm font-semibold text-foreground">Task</Label>
-            <Input
-              autoFocus
-              value={taskTitle}
-              onChange={(e) => onTitleChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSave()}
-              placeholder="What are you working on?"
-              className="h-12 bg-foreground/[0.04] border-foreground/15 focus-visible:ring-foreground/20 focus-visible:border-foreground/25"
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-5 px-8 pt-6 pb-8"
+          >
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold text-foreground">
+                    Task
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      autoFocus
+                      placeholder="What are you working on?"
+                      className="h-12 bg-foreground/[0.04] border-foreground/15 focus-visible:ring-foreground/20 focus-visible:border-foreground/25"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <Label className="text-sm font-semibold text-foreground">
-              Note{" "}
-              <span className="font-normal text-foreground/40">(optional)</span>
-            </Label>
-            <Textarea
-              value={taskNote}
-              onChange={(e) => onNoteChange(e.target.value)}
-              placeholder="Add any notes..."
-              rows={4}
-              className="resize-none bg-foreground/[0.04] border-foreground/15 focus-visible:ring-foreground/20 focus-visible:border-foreground/25"
+            <FormField
+              control={form.control}
+              name="note"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold text-foreground">
+                    Note{" "}
+                    <span className="font-normal text-foreground/40">
+                      (optional)
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Add any notes..."
+                      rows={4}
+                      className="resize-none bg-foreground/[0.04] border-foreground/15 focus-visible:ring-foreground/20 focus-visible:border-foreground/25"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-1">
-            <button
-              onClick={onCancel}
-              className="flex-1 h-14 rounded-xl border border-foreground/20 font-semibold text-foreground hover:bg-foreground/5 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onSave}
-              disabled={!taskTitle.trim()}
-              className="flex-1 h-14 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
-            >
-              Save
-            </button>
-          </div>
-        </div>
+            {/* Actions */}
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 h-14 rounded-xl border border-foreground/20 font-semibold text-foreground hover:bg-foreground/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 h-14 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   );
