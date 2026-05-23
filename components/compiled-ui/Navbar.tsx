@@ -57,10 +57,10 @@ export default function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuTrigger
                 className={cn(
-                  "bg-transparent text-background font-semibold text-sm h-auto px-3 py-1.5",
-                  "hover:bg-background/10 hover:text-background",
-                  "focus:bg-background/10 focus:text-background",
-                  "data-[state=open]:bg-background/10 data-[state=open]:text-foreground",
+                  "bg-transparent text-background font-semibold text-sm py-2 px-2",
+                  "hover:bg-background hover:text-foreground",
+                  "focus:bg-background focus:text-foreground",
+                  "data-[state=open]:bg-background data-[state=open]:text-foreground",
                   "[&>svg]:text-background/60 data-[state=open]:[&>svg]:text-foreground",
                 )}
               >
@@ -69,19 +69,21 @@ export default function Navbar() {
               <NavigationMenuContent className="min-w-[220px] p-1 bg-foreground border-background/20 text-background group-data-[viewport=false]/navigation-menu:bg-foreground">
                 {timerMenuItems.map((item) => (
                   <NavigationMenuLink
+                    asChild
                     key={item.href}
-                    href={item.href}
                     className="flex flex-row items-start gap-3 rounded-md px-3 py-2.5 hover:bg-background/10 hover:text-background"
                   >
-                    <item.icon className="mt-0.5 size-4 shrink-0 text-background/50" />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold leading-none text-background">
-                        {item.title}
-                      </span>
-                      <span className="text-xs text-background/50 leading-snug">
-                        {item.description}
-                      </span>
-                    </div>
+                    <Link href={item.href}>
+                      <item.icon className="mt-0.5 size-4 shrink-0 text-background/50" />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold leading-none text-background">
+                          {item.title}
+                        </span>
+                        <span className="text-xs text-background/50 leading-snug">
+                          {item.description}
+                        </span>
+                      </div>
+                    </Link>
                   </NavigationMenuLink>
                 ))}
               </NavigationMenuContent>
@@ -90,7 +92,7 @@ export default function Navbar() {
             {/* Tasks */}
             <NavigationMenuItem>
               <NavigationMenuLink
-                className="font-semibold text-background hover:bg-background/10 hover:text-background"
+                className="font-semibold text-background hover:bg-background hover:text-foreground"
                 href="/tasks"
               >
                 Tasks
@@ -100,7 +102,7 @@ export default function Navbar() {
             {/* Sign in */}
             <NavigationMenuItem>
               <NavigationMenuLink
-                className="font-semibold text-background hover:bg-background/10 hover:text-background"
+                className="font-semibold text-background hover:bg-background hover:text-foreground"
                 href="/login"
               >
                 Sign in
@@ -110,7 +112,7 @@ export default function Navbar() {
             {/* Sign up — inverted */}
             <NavigationMenuItem>
               <NavigationMenuLink
-                className="font-semibold bg-background text-foreground hover:bg-background/90 hover:text-foreground"
+                className="font-semibold bg-background text-foreground hover:bg-foreground hover:text-background"
                 href="/register"
               >
                 Sign up

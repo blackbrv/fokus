@@ -2,10 +2,27 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Plus, Pencil, X } from "lucide-react";
+import { Plus, Pencil, X, GripVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,7 +78,6 @@ function TaskDialog({
   onSave,
   onCancel,
 }: TaskDialogProps) {
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
@@ -147,6 +163,108 @@ function TaskDialog({
   );
 }
 
+// ─── SortableTaskItem ─────────────────────────────────────────────────────────
+
+interface SortableTaskItemProps {
+  task: Task;
+  isActive: boolean;
+  onSetActive: (id: string) => void;
+  onToggleComplete: (id: string) => void;
+  onEdit: (task: Task) => void;
+}
+
+function SortableTaskItem({
+  task,
+  isActive,
+  onSetActive,
+  onToggleComplete,
+  onEdit,
+}: SortableTaskItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={() => onSetActive(task.id)}
+      className={cn(
+        "flex items-center gap-3 px-4 h-[60px] rounded-xl cursor-pointer select-none",
+        "bg-foreground text-background transition-shadow",
+        isDragging
+          ? "opacity-50 shadow-2xl"
+          : isActive
+          ? "ring-2 ring-offset-1 ring-foreground/40 opacity-100"
+          : "opacity-80 hover:opacity-100",
+      )}
+    >
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+        aria-label="Drag to reorder"
+        className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-background/25 hover:text-background/60 transition-colors touch-none shrink-0"
+      >
+        <GripVertical size={14} />
+      </button>
+
+      {/* Radio / complete toggle */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleComplete(task.id);
+        }}
+        aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
+        className={cn(
+          "w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors",
+          task.completed
+            ? "border-background/80 bg-background/80"
+            : "border-background/50 hover:border-background",
+        )}
+      >
+        {task.completed && (
+          <div className="w-2 h-2 rounded-full bg-foreground" />
+        )}
+      </button>
+
+      {/* Title */}
+      <span
+        className={cn(
+          "flex-1 text-sm font-semibold truncate",
+          task.completed && "line-through opacity-50",
+        )}
+      >
+        {task.title}
+      </span>
+
+      {/* Edit */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit(task);
+        }}
+        aria-label={`Edit ${task.title}`}
+        className="p-1.5 rounded-md text-background/40 hover:text-background/80 transition-colors"
+      >
+        <Pencil size={14} />
+      </button>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TimerPage() {
@@ -170,6 +288,17 @@ export default function TimerPage() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Stores the effective session duration so +/- persists across pause/resume
   const sessionDuration = useRef(DURATIONS.pomodoro);
+
+  // ── DnD sensors ───────────────────────────────────────────────────────────
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   // ── Timer tick ────────────────────────────────────────────────────────────
 
@@ -277,6 +406,19 @@ export default function TimerPage() {
     setTasks((p) =>
       p.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
     );
+  };
+
+  // ── Drag end ──────────────────────────────────────────────────────────────
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setTasks((items) => {
+        const oldIndex = items.findIndex((t) => t.id === active.id);
+        const newIndex = items.findIndex((t) => t.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -389,60 +531,27 @@ export default function TimerPage() {
             data-aos-delay="440"
             data-aos-offset="0"
           >
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => setActiveTaskId(task.id)}
-                className={cn(
-                  "flex items-center gap-3 px-5 h-[60px] rounded-xl cursor-pointer transition-all",
-                  "bg-foreground text-background",
-                  activeTaskId === task.id
-                    ? "ring-2 ring-offset-1 ring-foreground/40"
-                    : "opacity-80 hover:opacity-100",
-                )}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={tasks.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
               >
-                {/* Radio / complete toggle */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleComplete(task.id);
-                  }}
-                  aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
-                  className={cn(
-                    "w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors",
-                    task.completed
-                      ? "border-background/80 bg-background/80"
-                      : "border-background/50 hover:border-background",
-                  )}
-                >
-                  {task.completed && (
-                    <div className="w-2 h-2 rounded-full bg-foreground" />
-                  )}
-                </button>
-
-                {/* Title */}
-                <span
-                  className={cn(
-                    "flex-1 text-sm font-semibold truncate",
-                    task.completed && "line-through opacity-50",
-                  )}
-                >
-                  {task.title}
-                </span>
-
-                {/* Edit */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEdit(task);
-                  }}
-                  aria-label={`Edit ${task.title}`}
-                  className="p-1.5 rounded-md text-background/40 hover:text-background/80 transition-colors"
-                >
-                  <Pencil size={14} />
-                </button>
-              </div>
-            ))}
+                {tasks.map((task) => (
+                  <SortableTaskItem
+                    key={task.id}
+                    task={task}
+                    isActive={activeTaskId === task.id}
+                    onSetActive={setActiveTaskId}
+                    onToggleComplete={toggleComplete}
+                    onEdit={openEdit}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
 
             {/* Add Task row */}
             <button
