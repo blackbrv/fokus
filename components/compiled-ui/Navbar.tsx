@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
   NavigationMenu,
@@ -40,69 +41,84 @@ export default function Navbar() {
       data-aos-duration="600"
       data-aos-offset="0"
     >
-      <NavigationMenu
-        viewport={false}
-        className="mx-auto h-max bg-foreground rounded-lg text-background p-2"
-      >
-        <NavigationMenuList>
-          {/* Timer — dropdown */}
-          <NavigationMenuItem>
-            <NavigationMenuTrigger
-              className={cn(
-                "bg-transparent text-background font-semibold text-sm h-auto px-3 py-1.5 ",
-                "focus:bg-background/10 focus:text-background hover:[&>svg]:text-foreground",
-                "data-[state=open]:bg-background data-[state=open]:text-foreground data-[state=open]:[&>svg]:text-foreground",
-                "[&>svg]:text-background/60",
-              )}
-            >
-              Timer
-            </NavigationMenuTrigger>
-            <NavigationMenuContent className="min-w-55 p-1 bg-foreground border-background/20 text-background group-data-[viewport=false]/navigation-menu:bg-foreground">
-              {timerMenuItems.map((item) => (
-                <NavigationMenuLink
-                  key={item.href}
-                  href={item.href}
-                  className="flex flex-row items-start gap-3 rounded-md px-3 py-2.5 hover:bg-background/10 hover:text-background"
-                >
-                  <item.icon className="mt-0.5 size-4 shrink-0 text-background/50" />
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-semibold leading-none text-background">
-                      {item.title}
-                    </span>
-                    <span className="text-xs text-background/50 leading-snug">
-                      {item.description}
-                    </span>
-                  </div>
-                </NavigationMenuLink>
-              ))}
-            </NavigationMenuContent>
-          </NavigationMenuItem>
+      <div className="mx-auto flex items-center gap-1 bg-foreground text-background rounded-xl px-2 py-1.5 shadow-sm">
+        {/* Fokus logo */}
+        <Link
+          href="/"
+          className="flex flex-col items-center justify-center w-[42px] h-[50px] bg-background text-foreground rounded-md font-black text-[10px] leading-[1.2] tracking-widest shrink-0 mr-1 select-none hover:opacity-90 transition-opacity"
+        >
+          <span>FOK</span>
+          <span>US</span>
+        </Link>
 
-          {/* Tasks */}
-          <NavigationMenuItem>
-            <NavigationMenuLink className="font-semibold" href="/tasks">
-              Tasks
-            </NavigationMenuLink>
-          </NavigationMenuItem>
+        <NavigationMenu viewport={false} className="bg-transparent">
+          <NavigationMenuList className="gap-0.5">
+            {/* Timer — dropdown */}
+            <NavigationMenuItem>
+              <NavigationMenuTrigger
+                className={cn(
+                  "bg-transparent text-background font-semibold text-sm h-auto px-3 py-1.5",
+                  "hover:bg-background/10 hover:text-background",
+                  "focus:bg-background/10 focus:text-background",
+                  "data-[state=open]:bg-background/10 data-[state=open]:text-foreground",
+                  "[&>svg]:text-background/60 data-[state=open]:[&>svg]:text-foreground",
+                )}
+              >
+                Timer
+              </NavigationMenuTrigger>
+              <NavigationMenuContent className="min-w-[220px] p-1 bg-foreground border-background/20 text-background group-data-[viewport=false]/navigation-menu:bg-foreground">
+                {timerMenuItems.map((item) => (
+                  <NavigationMenuLink
+                    key={item.href}
+                    href={item.href}
+                    className="flex flex-row items-start gap-3 rounded-md px-3 py-2.5 hover:bg-background/10 hover:text-background"
+                  >
+                    <item.icon className="mt-0.5 size-4 shrink-0 text-background/50" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold leading-none text-background">
+                        {item.title}
+                      </span>
+                      <span className="text-xs text-background/50 leading-snug">
+                        {item.description}
+                      </span>
+                    </div>
+                  </NavigationMenuLink>
+                ))}
+              </NavigationMenuContent>
+            </NavigationMenuItem>
 
-          {/* Sign in */}
-          <NavigationMenuItem>
-            <NavigationMenuLink className="font-semibold" href="/login">
-              Sign in
-            </NavigationMenuLink>
-          </NavigationMenuItem>
+            {/* Tasks */}
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                className="font-semibold text-background hover:bg-background/10 hover:text-background"
+                href="/tasks"
+              >
+                Tasks
+              </NavigationMenuLink>
+            </NavigationMenuItem>
 
-          {/* Sign up — reverted */}
-          <NavigationMenuItem>
-            <NavigationMenuLink
-              className="font-semibold hover:bg-foreground bg-background hover:text-background text-foreground"
-              href="/register"
-            >
-              Sign up
-            </NavigationMenuLink>
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
+            {/* Sign in */}
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                className="font-semibold text-background hover:bg-background/10 hover:text-background"
+                href="/login"
+              >
+                Sign in
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+
+            {/* Sign up — inverted */}
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                className="font-semibold bg-background text-foreground hover:bg-background/90 hover:text-foreground"
+                href="/register"
+              >
+                Sign up
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+      </div>
     </div>
   );
 }
