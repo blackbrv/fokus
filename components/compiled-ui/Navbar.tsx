@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
   NavigationMenu,
@@ -45,14 +46,19 @@ export default function Navbar() {
         {/* Fokus logo */}
         <Link
           href="/"
-          className="flex flex-col items-center justify-center w-[42px] h-[50px] bg-background text-foreground rounded-md font-black text-[10px] leading-[1.2] tracking-widest shrink-0 mr-1 select-none hover:opacity-90 transition-opacity"
+          className="shrink-0 mr-1 select-none hover:opacity-90 transition-opacity"
         >
-          <span>FOK</span>
-          <span>US</span>
+          <Image
+            src="/images/Fokus-large-transparent-logo.png"
+            alt="Fokus"
+            width={42}
+            height={50}
+            className="h-[50px] w-auto rounded-md"
+          />
         </Link>
 
         <NavigationMenu viewport={false} className="bg-transparent">
-          <NavigationMenuList className="gap-0.5">
+          <NavigationMenuList className="gap-1">
             {/* Timer — dropdown */}
             <NavigationMenuItem>
               <NavigationMenuTrigger
