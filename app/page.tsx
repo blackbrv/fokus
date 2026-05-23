@@ -1,6 +1,8 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -34,9 +36,14 @@ export default function Home() {
             data-aos-delay="240"
             data-aos-offset="0"
           >
-            <Button className="w-max font-medium flex items-center justify-center">
-              Start Fokusing
-              <ArrowRight strokeWidth={2.5} />
+            <Button
+              asChild
+              className="w-max font-medium flex items-center justify-center bg-foreground"
+            >
+              <Link href={"/timer"}>
+                <span>Start Fokusing</span>
+                <ArrowRight strokeWidth={2.5} />
+              </Link>
             </Button>
             <p className="text-md text-foreground/50 font-medium">
               Free plan. No card required
