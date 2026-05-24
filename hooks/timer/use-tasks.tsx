@@ -66,22 +66,23 @@ export function useTasks() {
     closeEdit();
   };
 
-  const toggleComplete = (id: string) =>
-    setTasks((prev) => {
-      const task = prev.find((t) => t.id === id);
-      if (task) {
-        toast(task.completed ? "Marked incomplete" : "Marked complete", {
-          icon: task.completed ? (
-            <Undo2 className="size-4" />
-          ) : (
-            <Check className="size-4" />
-          ),
-        });
-      }
-      return prev.map((t) =>
+  const toggleComplete = (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (task) {
+      toast(task.completed ? "Marked incomplete" : "Marked complete", {
+        icon: task.completed ? (
+          <Undo2 className="size-4" />
+        ) : (
+          <Check className="size-4" />
+        ),
+      });
+    }
+    setTasks((prev) =>
+      prev.map((t) =>
         t.id === id ? { ...t, completed: !t.completed } : t,
-      );
-    });
+      ),
+    );
+  };
 
   const deleteTask = (id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
