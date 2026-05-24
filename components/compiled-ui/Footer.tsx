@@ -18,7 +18,7 @@ function GithubIcon({ size = 16 }: { size?: number }) {
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-foreground text-background px-10 pt-10 pb-6 mt-auto">
+    <footer className="w-full bg-[#323232] text-[#EFEFEF] px-10 pt-10 pb-6 mt-auto border-t border-[#EFEFEF]/50">
       {/* Upper */}
       <div className="mx-auto max-w-[1200px] flex items-start justify-between">
         {/* Brand */}
@@ -32,7 +32,7 @@ export default function Footer() {
           />
           <div className="flex flex-col gap-1">
             <span className="text-3xl font-bold">Fokus</span>
-            <span className="text-sm text-background/55 leading-snug">
+            <span className="text-sm text-[#EFEFEF]/55 leading-snug">
               Focused Output
               <br />
               Keeps Us Sharp.
@@ -41,32 +41,46 @@ export default function Footer() {
         </div>
 
         {/* Nav links — 2-col grid */}
-        <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm font-semibold text-background/70">
-          <Link href="/timer" className="hover:text-background transition-colors">
+        <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm font-semibold text-[#EFEFEF]/70">
+          <Link href="/timer" className="hover:text-[#EFEFEF] transition-colors">
             Timer
           </Link>
-          <Link href="/tasks" className="hover:text-background transition-colors">
+          <Link href="/tasks" className="hover:text-[#EFEFEF] transition-colors">
             Tasks
           </Link>
-          <Link href="/settings" className="hover:text-background transition-colors">
+          <Link href="/settings" className="hover:text-[#EFEFEF] transition-colors">
             Settings
           </Link>
           <span />
-          <Link href="/reports" className="hover:text-background transition-colors">
+          <Link href="/reports" className="hover:text-[#EFEFEF] transition-colors">
             Reports
           </Link>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="mx-auto max-w-[1200px] border-t border-background/15 my-6" />
+      <div className="mx-auto max-w-[1200px] border-t border-[#EFEFEF]/15 my-6" />
 
       {/* Copyright bar */}
-      <div className="mx-auto max-w-[1200px] flex items-center justify-between text-sm text-background/45">
+      <div className="mx-auto max-w-[1200px] flex items-center justify-between text-sm text-[#EFEFEF]/45">
         <span>©2026 Fokus - All rights reserved</span>
         <div className="flex items-center gap-2">
-          <GithubIcon size={16} />
-          <span>Build with Lpdev</span>
+          <Link
+            href="https://github.com/blackbrv"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:opacity-80 transition-opacity"
+          >
+            <GithubIcon size={16} />
+          </Link>
+          <Link
+            href="https://lpdev.netlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:opacity-80 transition-opacity"
+          >
+            Build with Lpdev
+          </Link>
         </div>
       </div>
     </footer>
