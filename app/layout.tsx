@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AosProvider } from "@/components/aos-provider";
 import "./globals.css";
 import Navbar from "@/components/compiled-ui/Navbar";
+import Footer from "@/components/compiled-ui/Footer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -44,6 +45,7 @@ export default function RootLayout({
             <AosProvider>
               <Navbar />
               {children}
+              <Footer />
             </AosProvider>
           </TooltipProvider>
           <Toaster richColors position="top-right" />
