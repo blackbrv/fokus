@@ -21,6 +21,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Fokus",
   description: "Fokus app",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
