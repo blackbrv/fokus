@@ -59,7 +59,7 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="flex flex-1 flex-col items-center pt-10 pb-24 px-4 font-sans">
+    <div className="flex flex-1 flex-col items-center pt-10 pb-24 px-4 font-sans min-h-screen">
       <div className="w-full max-w-[700px] flex flex-col gap-7">
         <h1
           className="text-3xl font-bold text-foreground"
