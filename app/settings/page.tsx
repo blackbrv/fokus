@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Settings } from "lucide-react";
 import { toast } from "sonner";
 
 const SETTINGS_KEY = "fokus-settings";
@@ -39,7 +40,7 @@ export default function SettingsPage() {
 
   const update = (key: keyof TimerSettings, value: number) => {
     setSettings((prev) => ({ ...prev, [key]: Math.max(1, Math.min(120, value)) }));
-    toast.success("Settings saved");
+    toast.success("Settings saved", { icon: <Settings className="size-4" /> });
   };
 
   return (

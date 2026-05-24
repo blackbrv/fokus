@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
+import { Plus, Pencil, Check, Undo2, Trash2 } from "lucide-react";
 import { type Task, STORAGE_KEY } from "./shared";
 
 function loadTasks(): Task[] {
@@ -20,12 +21,10 @@ export function useTasks() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks]);
 
-  // ── Dialog state ──────────────────────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  // ── Add ───────────────────────────────────────────────────────────────────
   const openAdd = () => setAddOpen(true);
 
   const closeAdd = () => setAddOpen(false);
@@ -40,11 +39,10 @@ export function useTasks() {
         completed: false,
       },
     ]);
-    toast.success("Task added");
+    toast.success("Task added", { icon: <Plus className="size-4" /> });
     closeAdd();
   };
 
-  // ── Edit ──────────────────────────────────────────────────────────────────
   const openEdit = (task: Task) => {
     setEditingTask(task);
     setEditOpen(true);
@@ -64,16 +62,21 @@ export function useTasks() {
           : t,
       ),
     );
-    toast.success("Task updated");
+    toast.success("Task updated", { icon: <Pencil className="size-4" /> });
     closeEdit();
   };
 
-  // ── Complete / Delete / Reorder ───────────────────────────────────────────
   const toggleComplete = (id: string) =>
     setTasks((prev) => {
       const task = prev.find((t) => t.id === id);
       if (task) {
-        toast(task.completed ? "Marked incomplete" : "Marked complete");
+        toast(task.completed ? "Marked incomplete" : "Marked complete", {
+          icon: task.completed ? (
+            <Undo2 className="size-4" />
+          ) : (
+            <Check className="size-4" />
+          ),
+        });
       }
       return prev.map((t) =>
         t.id === id ? { ...t, completed: !t.completed } : t,
@@ -82,7 +85,7 @@ export function useTasks() {
 
   const deleteTask = (id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
-    toast("Task deleted");
+    toast("Task deleted", { icon: <Trash2 className="size-4" /> });
   };
 
   const reorderTasks = (activeId: string, overId: string) =>
@@ -92,7 +95,6 @@ export function useTasks() {
       return arrayMove(prev, from, to);
     });
 
-  // ── Derived ───────────────────────────────────────────────────────────────
   const activeTask = tasks.find((t) => !t.completed);
 
   return {
