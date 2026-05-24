@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Settings } from "lucide-react";
+import { Settings, Sun, Moon, Monitor } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const SETTINGS_KEY = "fokus-settings";
 
@@ -33,6 +35,7 @@ function loadSettings(): TimerSettings {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<TimerSettings>(loadSettings);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -44,7 +47,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col items-center pt-10 pb-24 px-4 font-sans">
+    <div className="flex flex-1 flex-col items-center pt-10 pb-24 px-4 font-sans min-h-screen">
       <div className="w-full max-w-[500px] flex flex-col gap-7">
         <h1
           className="text-3xl font-bold text-foreground"
@@ -116,6 +119,49 @@ export default function SettingsPage() {
                 }
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          data-aos="fade-up"
+          data-aos-duration="700"
+          data-aos-delay="300"
+          data-aos-offset="0"
+        >
+          <CardHeader
+            data-aos="fade-up"
+            data-aos-duration="600"
+            data-aos-delay="400"
+            data-aos-offset="0"
+          >
+            <CardTitle>Theme</CardTitle>
+          </CardHeader>
+          <CardContent
+            data-aos="fade-up"
+            data-aos-duration="600"
+            data-aos-delay="500"
+            data-aos-offset="0"
+          >
+            <ToggleGroup
+              type="single"
+              value={theme ?? "system"}
+              onValueChange={(v) => v && setTheme(v)}
+              variant="outline"
+              className="w-full"
+            >
+              <ToggleGroupItem value="light" className="flex-1 gap-2">
+                <Sun className="size-4" />
+                Light
+              </ToggleGroupItem>
+              <ToggleGroupItem value="dark" className="flex-1 gap-2">
+                <Moon className="size-4" />
+                Dark
+              </ToggleGroupItem>
+              <ToggleGroupItem value="system" className="flex-1 gap-2">
+                <Monitor className="size-4" />
+                System
+              </ToggleGroupItem>
+            </ToggleGroup>
           </CardContent>
         </Card>
       </div>
