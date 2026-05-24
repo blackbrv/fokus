@@ -52,7 +52,7 @@ export default function TasksPage() {
 
   return (
     <>
-      <div className="flex flex-1 flex-col items-center pt-10 pb-24 px-4 font-sans">
+      <div className="flex flex-1 flex-col items-center pt-10 pb-24 px-4 font-sans min-h-screen">
         <div className="w-full max-w-[700px] flex flex-col items-center gap-7">
           <h1
             className="text-3xl font-bold text-foreground"

@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center font-sans">
+    <div className="flex flex-col flex-1 items-center justify-center font-sans min-h-screen">
       <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-20 px-16 sm:items-start">
         <div className="w-max h-max mx-auto flex flex-col gap-10 items-center justify-center">
           <h1

@@ -15,7 +15,7 @@ import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <div className="flex flex-1 items-center justify-center px-4 font-sans">
+    <div className="flex flex-1 items-center justify-center px-4 font-sans min-h-screen">
       <Card
         className="w-full max-w-[400px]"
         data-aos="fade-up"

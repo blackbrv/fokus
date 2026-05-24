@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AosProvider } from "@/components/aos-provider";
 import "./globals.css";
 import Navbar from "@/components/compiled-ui/Navbar";
+import Footer from "@/components/compiled-ui/Footer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,6 +21,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Fokus",
   description: "Fokus app",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
@@ -44,6 +46,7 @@ export default function RootLayout({
             <AosProvider>
               <Navbar />
               {children}
+              <Footer />
             </AosProvider>
           </TooltipProvider>
           <Toaster richColors position="top-right" />
