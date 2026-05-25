@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { DURATIONS, type TimerMode } from "./shared";
 
-export function useTimer() {
+export function useTimer(onTimerComplete?: (mode: TimerMode) => void) {
   const [mode, setMode] = useState<TimerMode>("pomodoro");
   const [timeLeft, setTimeLeft] = useState(DURATIONS.pomodoro);
   const [isRunning, setIsRunning] = useState(false);
@@ -9,6 +9,8 @@ export function useTimer() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionDuration = useRef(DURATIONS.pomodoro);
+  const onCompleteRef = useRef(onTimerComplete);
+  onCompleteRef.current = onTimerComplete;
 
   useEffect(() => {
     if (!isRunning) return;
@@ -18,6 +20,7 @@ export function useTimer() {
         if (prev <= 1) {
           setIsRunning(false);
           if (mode === "pomodoro") setSessionCount((c) => c + 1);
+          onCompleteRef.current?.(mode);
           return 0;
         }
         return prev - 1;

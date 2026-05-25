@@ -18,12 +18,23 @@ import {
 } from "@dnd-kit/sortable";
 import { useTimer } from "@/hooks/timer/use-timer";
 import { useTasks } from "@/hooks/timer/use-tasks";
+import { useNotification } from "@/hooks/use-notification";
 import { TaskDialog } from "@/components/timer/task-dialog";
 import { SortableTaskItem } from "@/components/timer/sortable-task-item";
 import { DURATIONS, MODE_LABELS, fmt, type TimerMode } from "@/hooks/timer/shared";
 
+const MODE_NOTIFICATIONS: Record<TimerMode, { title: string; body: string }> = {
+  pomodoro: { title: "Pomodoro Complete!", body: "Time for a break!" },
+  "short-break": { title: "Short Break Over!", body: "Ready to focus again." },
+  "long-break": { title: "Long Break Over!", body: "Ready to focus again!" },
+};
+
 export default function TimerPage() {
-  const timer = useTimer();
+  const { notify, requestPermission } = useNotification();
+  const timer = useTimer((m) => {
+    const n = MODE_NOTIFICATIONS[m];
+    notify(n.title, n.body);
+  });
   const {
     tasks,
     activeTask,
@@ -45,6 +56,11 @@ export default function TimerPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  const handleStart = () => {
+    requestPermission();
+    timer.handleStartPause();
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -122,7 +138,7 @@ export default function TimerPage() {
 
           {/* Start / Pause / Restart */}
           <button
-            onClick={timer.handleStartPause}
+            onClick={handleStart}
             data-aos="fade-up"
             data-aos-duration="600"
             data-aos-delay="280"
