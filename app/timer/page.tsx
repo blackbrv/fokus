@@ -22,7 +22,7 @@ import { useNotification } from "@/hooks/use-notification";
 import { useAudio } from "@/hooks/use-audio";
 import { TaskDialog } from "@/components/timer/task-dialog";
 import { SortableTaskItem } from "@/components/timer/sortable-task-item";
-import { DURATIONS, MODE_LABELS, fmt, type TimerMode } from "@/hooks/timer/shared";
+import { MODES, MODE_LABELS, fmt, type TimerMode } from "@/hooks/timer/shared";
 
 const MODE_NOTIFICATIONS: Record<TimerMode, { title: string; body: string }> = {
   pomodoro: { title: "Pomodoro Complete!", body: "Time for a break!" },
@@ -58,7 +58,9 @@ export default function TimerPage() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleStart = () => {
@@ -75,9 +77,8 @@ export default function TimerPage() {
 
   return (
     <>
-      <div className="flex flex-1 flex-col items-center justify-start pt-10 pb-24 px-4 font-sans">
+      <div className="flex flex-1 flex-col items-center justify-start pt-10 pb-24 px-4 font-sans min-h-screen">
         <div className="w-full max-w-[700px] flex flex-col items-center gap-7">
-
           {/* Mode tabs */}
           <div
             className="flex items-center gap-2"
@@ -85,7 +86,7 @@ export default function TimerPage() {
             data-aos-duration="600"
             data-aos-offset="0"
           >
-            {(Object.keys(DURATIONS) as TimerMode[]).map((m) => (
+            {MODES.map((m) => (
               <button
                 key={m}
                 onClick={() => timer.changeMode(m)}
