@@ -19,6 +19,7 @@ import {
 import { useTimer } from "@/hooks/timer/use-timer";
 import { useTasks } from "@/hooks/timer/use-tasks";
 import { useNotification } from "@/hooks/use-notification";
+import { useAudio } from "@/hooks/use-audio";
 import { TaskDialog } from "@/components/timer/task-dialog";
 import { SortableTaskItem } from "@/components/timer/sortable-task-item";
 import { DURATIONS, MODE_LABELS, fmt, type TimerMode } from "@/hooks/timer/shared";
@@ -31,9 +32,12 @@ const MODE_NOTIFICATIONS: Record<TimerMode, { title: string; body: string }> = {
 
 export default function TimerPage() {
   const { notify, requestPermission } = useNotification();
+  const { playBreakChime, playFocusChime } = useAudio();
   const timer = useTimer((m) => {
     const n = MODE_NOTIFICATIONS[m];
     notify(n.title, n.body);
+    if (m === "pomodoro") playBreakChime();
+    else playFocusChime();
   });
   const {
     tasks,
