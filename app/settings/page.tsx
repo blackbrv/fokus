@@ -4,34 +4,12 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Settings, Sun, Moon, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
-const SETTINGS_KEY = "fokus-settings";
-
-interface TimerSettings {
-  pomodoro: number;
-  shortBreak: number;
-  longBreak: number;
-}
-
-const DEFAULTS: TimerSettings = {
-  pomodoro: 25,
-  shortBreak: 5,
-  longBreak: 15,
-};
-
-function loadSettings(): TimerSettings {
-  if (typeof window === "undefined") return DEFAULTS;
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw ? (JSON.parse(raw) as TimerSettings) : DEFAULTS;
-  } catch {
-    return DEFAULTS;
-  }
-}
+import { SETTINGS_KEY, loadSettings, type TimerSettings } from "@/hooks/timer/shared";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<TimerSettings>(loadSettings);
@@ -41,8 +19,9 @@ export default function SettingsPage() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
 
-  const update = (key: keyof TimerSettings, value: number) => {
-    setSettings((prev) => ({ ...prev, [key]: Math.max(1, Math.min(120, value)) }));
+  const handleNumberChange = (key: "pomodoro" | "shortBreak" | "longBreak" | "sessionsBeforeLongBreak", value: number) => {
+    const max = key === "sessionsBeforeLongBreak" ? 20 : 120;
+    setSettings((prev) => ({ ...prev, [key]: Math.max(1, Math.min(max, value)) }));
     toast.success("Settings saved", { icon: <Settings className="size-4" /> });
   };
 
@@ -80,6 +59,9 @@ export default function SettingsPage() {
           >
             <div className="flex flex-col gap-2">
               <Label htmlFor="pomodoro">Pomodoro</Label>
+              <p className="text-sm text-foreground/50 -mt-1">
+                Focus session duration.
+              </p>
               <Input
                 id="pomodoro"
                 type="number"
@@ -87,13 +69,16 @@ export default function SettingsPage() {
                 max={120}
                 value={settings.pomodoro}
                 onChange={(e) =>
-                  update("pomodoro", Number(e.target.value))
+                  handleNumberChange("pomodoro", Number(e.target.value))
                 }
               />
             </div>
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="shortBreak">Short Break</Label>
+              <p className="text-sm text-foreground/50 -mt-1">
+                Brief rest between pomodoros.
+              </p>
               <Input
                 id="shortBreak"
                 type="number"
@@ -101,13 +86,16 @@ export default function SettingsPage() {
                 max={120}
                 value={settings.shortBreak}
                 onChange={(e) =>
-                  update("shortBreak", Number(e.target.value))
+                  handleNumberChange("shortBreak", Number(e.target.value))
                 }
               />
             </div>
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="longBreak">Long Break</Label>
+              <p className="text-sm text-foreground/50 -mt-1">
+                Extended rest after multiple pomodoros.
+              </p>
               <Input
                 id="longBreak"
                 type="number"
@@ -115,7 +103,7 @@ export default function SettingsPage() {
                 max={120}
                 value={settings.longBreak}
                 onChange={(e) =>
-                  update("longBreak", Number(e.target.value))
+                  handleNumberChange("longBreak", Number(e.target.value))
                 }
               />
             </div>
@@ -125,18 +113,78 @@ export default function SettingsPage() {
         <Card
           data-aos="fade-up"
           data-aos-duration="700"
-          data-aos-delay="300"
+          data-aos-delay="200"
           data-aos-offset="0"
         >
           <CardHeader
             data-aos="fade-up"
             data-aos-duration="600"
+            data-aos-delay="300"
+            data-aos-offset="0"
+          >
+            <CardTitle>Session Cycle</CardTitle>
+          </CardHeader>
+          <CardContent
+            className="flex flex-col gap-5"
+            data-aos="fade-up"
+            data-aos-duration="600"
             data-aos-delay="400"
             data-aos-offset="0"
           >
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="sessionsBeforeLongBreak">
+                Pomodoros before long break
+              </Label>
+              <p className="text-sm text-foreground/50 -mt-1">
+                After this many pomodoros, a long break replaces the short break.
+              </p>
+              <Input
+                id="sessionsBeforeLongBreak"
+                type="number"
+                min={1}
+                max={20}
+                value={settings.sessionsBeforeLongBreak}
+                onChange={(e) =>
+                  handleNumberChange("sessionsBeforeLongBreak", Number(e.target.value))
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="autoStart" className="cursor-pointer">
+                Auto-start sessions
+              </Label>
+              <Switch
+                id="autoStart"
+                checked={settings.autoStart}
+                onCheckedChange={(checked: boolean) => {
+                  setSettings((prev) => ({ ...prev, autoStart: checked }));
+                  toast.success("Settings saved", { icon: <Settings className="size-4" /> });
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          data-aos="fade-up"
+          data-aos-duration="700"
+          data-aos-delay="500"
+          data-aos-offset="0"
+        >
+          <CardHeader
+            data-aos="fade-up"
+            data-aos-duration="600"
+            data-aos-delay="600"
+            data-aos-offset="0"
+          >
             <CardTitle>Theme</CardTitle>
+            <p className="text-sm text-foreground/50">
+              Choose between light, dark, or system theme.
+            </p>
           </CardHeader>
           <CardContent
+            className="flex flex-col gap-5"
             data-aos="fade-up"
             data-aos-duration="600"
             data-aos-delay="500"

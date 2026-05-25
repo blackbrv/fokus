@@ -18,12 +18,27 @@ import {
 } from "@dnd-kit/sortable";
 import { useTimer } from "@/hooks/timer/use-timer";
 import { useTasks } from "@/hooks/timer/use-tasks";
+import { useNotification } from "@/hooks/use-notification";
+import { useAudio } from "@/hooks/use-audio";
 import { TaskDialog } from "@/components/timer/task-dialog";
 import { SortableTaskItem } from "@/components/timer/sortable-task-item";
-import { DURATIONS, MODE_LABELS, fmt, type TimerMode } from "@/hooks/timer/shared";
+import { MODES, MODE_LABELS, fmt, type TimerMode } from "@/hooks/timer/shared";
+
+const MODE_NOTIFICATIONS: Record<TimerMode, { title: string; body: string }> = {
+  pomodoro: { title: "Pomodoro Complete!", body: "Time for a break!" },
+  "short-break": { title: "Short Break Over!", body: "Ready to focus again." },
+  "long-break": { title: "Long Break Over!", body: "Ready to focus again!" },
+};
 
 export default function TimerPage() {
-  const timer = useTimer();
+  const { notify, requestPermission } = useNotification();
+  const { playBreakChime, playFocusChime } = useAudio();
+  const timer = useTimer((m) => {
+    const n = MODE_NOTIFICATIONS[m];
+    notify(n.title, n.body);
+    if (m === "pomodoro") playBreakChime();
+    else playFocusChime();
+  });
   const {
     tasks,
     activeTask,
@@ -43,8 +58,15 @@ export default function TimerPage() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
+
+  const handleStart = () => {
+    requestPermission();
+    timer.handleStartPause();
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -55,9 +77,8 @@ export default function TimerPage() {
 
   return (
     <>
-      <div className="flex flex-1 flex-col items-center justify-start pt-10 pb-24 px-4 font-sans">
+      <div className="flex flex-1 flex-col items-center justify-start pt-10 pb-24 px-4 font-sans min-h-screen">
         <div className="w-full max-w-[700px] flex flex-col items-center gap-7">
-
           {/* Mode tabs */}
           <div
             className="flex items-center gap-2"
@@ -65,7 +86,7 @@ export default function TimerPage() {
             data-aos-duration="600"
             data-aos-offset="0"
           >
-            {(Object.keys(DURATIONS) as TimerMode[]).map((m) => (
+            {MODES.map((m) => (
               <button
                 key={m}
                 onClick={() => timer.changeMode(m)}
@@ -122,7 +143,7 @@ export default function TimerPage() {
 
           {/* Start / Pause / Restart */}
           <button
-            onClick={timer.handleStartPause}
+            onClick={handleStart}
             data-aos="fade-up"
             data-aos-duration="600"
             data-aos-delay="280"
