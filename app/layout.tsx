@@ -19,8 +19,52 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fokus",
-  description: "Fokus app",
+  title: {
+    default: "Fokus — Minimal Pomodoro Timer for Deep Focus",
+    template: "%s | Fokus",
+  },
+  description:
+    "A minimal Pomodoro timer designed to help you stay focused, build momentum, and finish meaningful work sessions with clarity.",
+  metadataBase: new URL("https://fokus-cyan-six.vercel.app"),
+  alternates: { canonical: "/" },
+  keywords: [
+    "Pomodoro timer",
+    "focus app",
+    "productivity tool",
+    "Next.js timer",
+    "task manager",
+    "time management",
+  ],
+  authors: [{ name: "Lpdev" }],
+  creator: "Lpdev",
+  publisher: "Lpdev",
+  category: "productivity",
+  robots: { index: true, follow: true },
+  openGraph: {
+    title: "Fokus — Minimal Pomodoro Timer for Deep Focus",
+    description:
+      "A minimal Pomodoro timer designed to help you stay focused, build momentum, and finish meaningful work sessions with clarity.",
+    url: "https://fokus-cyan-six.vercel.app",
+    siteName: "Fokus",
+    type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "https://fokus-cyan-six.vercel.app/Fokus-landing-page.png",
+        width: 2855,
+        height: 1381,
+        alt: "Fokus Pomodoro Timer",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fokus — Minimal Pomodoro Timer for Deep Focus",
+    description:
+      "A minimal Pomodoro timer designed to help you stay focused, build momentum, and finish meaningful work sessions with clarity.",
+    images: ["https://fokus-cyan-six.vercel.app/Fokus-landing-page.png"],
+    creator: "@lpdev",
+  },
   icons: { icon: "/favicon.svg" },
 };
 
