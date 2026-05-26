@@ -1,10 +1,12 @@
 export type TimerMode = "pomodoro" | "short-break" | "long-break";
 
+export type TaskStatus = "todo" | "in-progress" | "done";
+
 export type Task = {
   id: string;
   title: string;
   note: string;
-  completed: boolean;
+  status: TaskStatus;
 };
 
 export const MODES: TimerMode[] = ["pomodoro", "short-break", "long-break"];
@@ -24,6 +26,45 @@ export const MODE_LABELS: Record<TimerMode, string> = {
 export const STORAGE_KEY = "fokus-tasks";
 
 export const SETTINGS_KEY = "fokus-settings";
+
+export const SESSIONS_KEY = "fokus-sessions";
+export const ACTIVE_SESSION_KEY = "fokus-active-session";
+
+export interface SessionSettings {
+  pomodoroMinutes: number;
+  shortBreakMinutes: number;
+  longBreakMinutes: number;
+  longBreakInterval: number;
+}
+
+export interface TimerState {
+  mode: TimerMode;
+  remainingSeconds: number;
+  pomodoroCount: number;
+  isRunning: boolean;
+}
+
+export type Session = {
+  id: string;
+  name: string;
+  settings: SessionSettings;
+  timerState: TimerState;
+  tasks: Task[];
+};
+
+export const DEFAULT_SESSION_SETTINGS: SessionSettings = {
+  pomodoroMinutes: 25,
+  shortBreakMinutes: 5,
+  longBreakMinutes: 15,
+  longBreakInterval: 4,
+};
+
+export const DEFAULT_TIMER_STATE: TimerState = {
+  mode: "pomodoro",
+  remainingSeconds: 25 * 60,
+  pomodoroCount: 1,
+  isRunning: false,
+};
 
 export interface TimerSettings {
   pomodoro: number;

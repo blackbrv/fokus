@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
+import { Plus, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -15,14 +15,18 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  arrayMove,
 } from "@dnd-kit/sortable";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { useSessions } from "@/hooks/timer/use-sessions";
 import { useTimer } from "@/hooks/timer/use-timer";
-import { useTasks } from "@/hooks/timer/use-tasks";
 import { useNotification } from "@/hooks/use-notification";
 import { useAudio } from "@/hooks/use-audio";
 import { TaskDialog } from "@/components/timer/task-dialog";
 import { SortableTaskItem } from "@/components/timer/sortable-task-item";
 import { MODES, MODE_LABELS, fmt, type TimerMode } from "@/hooks/timer/shared";
+import type { Task } from "@/hooks/timer/shared";
 
 const MODE_NOTIFICATIONS: Record<TimerMode, { title: string; body: string }> = {
   pomodoro: { title: "Pomodoro Complete!", body: "Time for a break!" },
@@ -31,30 +35,58 @@ const MODE_NOTIFICATIONS: Record<TimerMode, { title: string; body: string }> = {
 };
 
 export default function TimerPage() {
+  const {
+    sessions,
+    activeSession,
+    setActiveSessionId,
+    updateSessionTasks,
+    updateSessionTimerState,
+    stopAllTimers,
+  } = useSessions();
+
   const { notify, requestPermission } = useNotification();
   const { playBreakChime, playFocusChime } = useAudio();
-  const timer = useTimer((m) => {
-    const n = MODE_NOTIFICATIONS[m];
-    notify(n.title, n.body);
-    if (m === "pomodoro") playBreakChime();
-    else playFocusChime();
-  });
-  const {
-    tasks,
-    activeTask,
-    addOpen,
-    editOpen,
-    editingTask,
-    openAdd,
-    closeAdd,
-    handleAddSave,
-    openEdit,
-    closeEdit,
-    handleEditSave,
-    toggleComplete,
-    deleteTask,
-    reorderTasks,
-  } = useTasks();
+
+  const handleTimerComplete = useCallback(
+    (m: TimerMode) => {
+      const n = MODE_NOTIFICATIONS[m];
+      notify(n.title, n.body);
+      if (m === "pomodoro") playBreakChime();
+      else playFocusChime();
+    },
+    [notify, playBreakChime, playFocusChime],
+  );
+
+  const timer = useTimer(
+    activeSession?.id ?? "none",
+    activeSession?.settings ?? {
+      pomodoroMinutes: 25,
+      shortBreakMinutes: 5,
+      longBreakMinutes: 15,
+      longBreakInterval: 4,
+    },
+    activeSession?.timerState ?? {
+      mode: "pomodoro",
+      remainingSeconds: 25 * 60,
+      pomodoroCount: 1,
+      isRunning: false,
+    },
+    (state) => {
+      if (activeSession) {
+        updateSessionTimerState(activeSession.id, state);
+      }
+    },
+    handleTimerComplete,
+  );
+
+  const sessionScrollRef = useRef<HTMLDivElement>(null);
+  const scrollSessions = (dir: "left" | "right") => {
+    sessionScrollRef.current?.scrollBy({ left: dir === "left" ? -130 : 130, behavior: "smooth" });
+  };
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -65,20 +97,153 @@ export default function TimerPage() {
 
   const handleStart = () => {
     requestPermission();
+    if (activeSession) {
+      const anyRunning = sessions.some(
+        (s) => s.id !== activeSession.id && s.timerState.isRunning,
+      );
+      if (anyRunning) stopAllTimers();
+    }
     timer.handleStartPause();
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      reorderTasks(String(active.id), String(over.id));
-    }
+    if (!over || active.id === over.id || !activeSession) return;
+    const arr = activeSession.tasks;
+    const from = arr.findIndex((t) => t.id === String(active.id));
+    const to = arr.findIndex((t) => t.id === String(over.id));
+    updateSessionTasks(activeSession.id, arrayMove(arr, from, to));
   };
+
+  const openAdd = () => setAddOpen(true);
+  const closeAdd = () => setAddOpen(false);
+  const handleAddSave = (data: { title: string; note?: string }) => {
+    if (!activeSession) return;
+    const newTask: Task = {
+      id: crypto.randomUUID(),
+      title: data.title.trim(),
+      note: (data.note ?? "").trim(),
+      status: "todo",
+    };
+    updateSessionTasks(activeSession.id, [...activeSession.tasks, newTask]);
+    toast.success("Task added", { icon: <Plus className="size-4" /> });
+    closeAdd();
+  };
+
+  const openEdit = (task: Task) => {
+    setEditingTask(task);
+    setEditOpen(true);
+  };
+  const closeEdit = () => {
+    setEditingTask(null);
+    setEditOpen(false);
+  };
+  const handleEditSave = (data: { title: string; note?: string }) => {
+    if (!activeSession || !editingTask) return;
+    updateSessionTasks(
+      activeSession.id,
+      activeSession.tasks.map((t) =>
+        t.id === editingTask.id
+          ? { ...t, title: data.title.trim(), note: (data.note ?? "").trim() }
+          : t,
+      ),
+    );
+    toast.success("Task updated", { icon: <Pencil className="size-4" /> });
+    closeEdit();
+  };
+
+  const toggleComplete = (id: string) => {
+    if (!activeSession) return;
+    updateSessionTasks(
+      activeSession.id,
+      activeSession.tasks.map((t) =>
+        t.id === id
+          ? { ...t, status: t.status === "done" ? "todo" : "done" }
+          : t,
+      ),
+    );
+  };
+
+  const deleteTask = (id: string) => {
+    if (!activeSession) return;
+    updateSessionTasks(
+      activeSession.id,
+      activeSession.tasks.filter((t) => t.id !== id),
+    );
+    toast("Task deleted", { icon: <Plus className="size-4" /> });
+  };
+
+  const activeTask = activeSession?.tasks.find((t) => t.status !== "done") ?? null;
+
+  if (!activeSession) {
+    return (
+      <div className="flex flex-1 items-center justify-center min-h-screen">
+        <p className="text-foreground/45 font-medium">
+          No sessions available. Create one on the Tasks page.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="flex flex-1 flex-col items-center justify-start pt-10 pb-24 px-4 font-sans min-h-screen">
         <div className="w-full max-w-[700px] flex flex-col items-center gap-7">
+          {/* Session switcher */}
+          {sessions.length > 1 && (
+            <div
+              className="flex items-center gap-1.5"
+              data-aos="fade-down"
+              data-aos-duration="600"
+              data-aos-offset="0"
+            >
+              {sessions.length > 3 && (
+                <button
+                  onClick={() => scrollSessions("left")}
+                  aria-label="Scroll sessions left"
+                  className="shrink-0 w-7 h-7 rounded-lg border border-foreground/20 flex items-center justify-center text-foreground/50 hover:border-foreground/40 hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+              )}
+
+              <div
+                ref={sessionScrollRef}
+                className={cn(
+                  "flex items-center gap-1.5",
+                  sessions.length > 3
+                    ? "overflow-x-auto max-w-[260px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    : "flex-wrap justify-center",
+                )}
+              >
+                {sessions.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setActiveSessionId(s.id)}
+                    className={cn(
+                      "shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                      s.id === activeSession.id
+                        ? "bg-foreground text-background"
+                        : "border border-foreground/20 text-foreground/60 hover:border-foreground/40 hover:text-foreground",
+                    )}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+
+              {sessions.length > 3 && (
+                <button
+                  onClick={() => scrollSessions("right")}
+                  aria-label="Scroll sessions right"
+                  className="shrink-0 w-7 h-7 rounded-lg border border-foreground/20 flex items-center justify-center text-foreground/50 hover:border-foreground/40 hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Mode tabs */}
           <div
             className="flex items-center gap-2"
@@ -183,10 +348,10 @@ export default function TimerPage() {
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={tasks.map((t) => t.id)}
+                items={activeSession.tasks.map((t) => t.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {tasks.map((task) => (
+                {activeSession.tasks.map((task) => (
                   <SortableTaskItem
                     key={task.id}
                     task={task}
@@ -210,7 +375,6 @@ export default function TimerPage() {
         </div>
       </div>
 
-      {/* Add Task dialog */}
       {addOpen && (
         <TaskDialog
           heading="Add Task"
@@ -219,7 +383,6 @@ export default function TimerPage() {
         />
       )}
 
-      {/* Edit Task dialog */}
       {editOpen && editingTask && (
         <TaskDialog
           heading="Edit Task"

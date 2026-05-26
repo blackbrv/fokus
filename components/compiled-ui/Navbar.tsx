@@ -105,25 +105,6 @@ export default function Navbar() {
               </NavigationMenuLink>
             </NavigationMenuItem>
 
-            {/* Sign in */}
-            <NavigationMenuItem>
-              <NavigationMenuLink
-                asChild
-                className="font-semibold text-background hover:bg-background hover:text-foreground"
-              >
-                <Link href="/login">Sign in</Link>
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-
-            {/* Sign up — inverted */}
-            <NavigationMenuItem>
-              <NavigationMenuLink
-                asChild
-                className="font-semibold bg-background text-foreground hover:bg-foreground hover:text-background"
-              >
-                <Link href="/register">Sign up</Link>
-              </NavigationMenuLink>
-            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
       </div>
