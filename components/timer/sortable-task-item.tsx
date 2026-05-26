@@ -124,25 +124,25 @@ export function SortableTaskItem({
           <GripVertical size={14} />
         </button>
 
-        {/* Completion toggle */}
+        {/* Status indicator + toggle */}
         <button
           onClick={(e) => { e.stopPropagation(); onToggleComplete(task.id); }}
-          aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
+          aria-label={task.status === "done" ? "Mark incomplete" : "Mark complete"}
           className={cn(
             "w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors cursor-pointer",
-            task.completed
+            task.status === "done"
               ? "border-background/80 bg-background/80"
               : "border-background/50 hover:border-background",
           )}
         >
-          {task.completed && <div className="w-2 h-2 rounded-full bg-foreground" />}
+          {task.status === "done" && <div className="w-2 h-2 rounded-full bg-foreground" />}
         </button>
 
         {/* Title */}
         <span
           className={cn(
             "flex-1 text-sm font-semibold truncate",
-            task.completed && "line-through opacity-50",
+            task.status === "done" && "line-through opacity-50",
           )}
         >
           {task.title}
