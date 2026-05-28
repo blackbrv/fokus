@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://fokus-cyan-six.vercel.app
+
+# Sitemaps
+Sitemap: https://fokus-cyan-six.vercel.app/sitemap.xml

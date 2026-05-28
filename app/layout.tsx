@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -94,6 +95,31 @@ export default function RootLayout({
             </AosProvider>
           </TooltipProvider>
           <Toaster richColors position="top-right" />
+          <Script
+            id="structured-data"
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                name: "Fokus",
+                applicationCategory: "ProductivityApplication",
+                operatingSystem: "Web",
+                description:
+                  "A minimal Pomodoro timer designed to help you stay focused, build momentum, and finish meaningful work sessions with clarity.",
+                url: "https://fokus-cyan-six.vercel.app",
+                offers: {
+                  "@type": "Offer",
+                  price: "0",
+                  priceCurrency: "USD",
+                },
+                author: {
+                  "@type": "Person",
+                  name: "Lpdev",
+                },
+              }),
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>
