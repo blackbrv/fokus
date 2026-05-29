@@ -22,6 +22,8 @@ export function useTimer(
   const [sessionCount, setSessionCount] = useState(timerState.pomodoroCount);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef(0);
+  const durationAtStartRef = useRef(0);
   const sessionDuration = useRef(timerState.remainingSeconds);
   const settingsRef = useRef(settings);
   const onCompleteRef = useRef(onTimerComplete);
@@ -53,19 +55,38 @@ export function useTimer(
   useEffect(() => {
     if (!isRunning) return;
 
-    intervalRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setIsRunning(false);
-          onCompleteRef.current?.(mode);
-          return 0;
+    startTimeRef.current = performance.now();
+    durationAtStartRef.current = timeLeft;
+
+    const tick = () => {
+      const elapsed = (performance.now() - startTimeRef.current) / 1000;
+      const remaining = Math.max(
+        0,
+        Math.round(durationAtStartRef.current - elapsed),
+      );
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) {
+        setIsRunning(false);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
-        return prev - 1;
-      });
-    }, 1000);
+        onCompleteRef.current?.(mode);
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) tick();
+    };
+
+    intervalRef.current = setInterval(tick, 200);
+    tick();
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [isRunning, mode]);
 
