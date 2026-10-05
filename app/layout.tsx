@@ -81,6 +81,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col relative">
+        {/* Apply the saved custom theme before paint (see hooks/use-themes.ts). */}
+        <Script id="fokus-theme-boot" strategy="beforeInteractive">
+          {`try{var c=localStorage.getItem("fokus-theme-css");if(c){var s=document.createElement("style");s.id="fokus-theme";s.textContent=c;document.head.appendChild(s)}}catch(e){}`}
+        </Script>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
