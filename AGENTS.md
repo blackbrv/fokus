@@ -35,11 +35,12 @@ Pomodoro timer app — fully client-side, no backend, no database.
 - **Forms**: react-hook-form + `@hookform/resolvers/zod` + shadcn `<Form>` components.
 - **Toasts**: `sonner` — `<Toaster>` is in root layout, call `toast.success(...)` anywhere.
 - **Animations**: AOS — globally initialized in `<AosProvider>` with `once: true`, `duration: 600`, `offset: 50`. Just add `data-aos="fade-up"` + optional `data-aos-delay` / `data-aos-duration` / `data-aos-offset="0"`.
-- **Theme**: next-themes with `class` strategy. `<ThemeProvider>` wraps root layout.
+- **Theme**: next-themes with `class` strategy (light/dark). `<ThemeProvider>` wraps root layout.
+- **Color themes**: `lib/themes.ts` (tokens, presets with light+dark palettes) + `hooks/use-themes.ts` (store). Custom themes in `"fokus-custom-themes"`, active id in `"fokus-active-theme"`, compiled CSS in `"fokus-theme-css"` (applied pre-paint by a `beforeInteractive` script in root layout). Editor: `components/theme/ThemeDialog.tsx` (navbar palette button); browser: `/themes`.
 - **Class merging**: `cn()` from `@/lib/utils` (clsx + tailwind-merge).
 
 ## Routes
-`/` `/timer` `/tasks` `/settings` `/reports` `/reports/[id]` `/login` `/register`
+`/` `/timer` `/tasks` `/themes` `/settings` `/reports` `/reports/[id]` `/login` `/register`
 
 ## Settings
 Persisted to `localStorage` under `"fokus-settings"` — stores `{ pomodoro, shortBreak, longBreak, sessionsBeforeLongBreak, autoStart }` in minutes.
