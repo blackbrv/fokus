@@ -1,9 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { Plus, Play, Pencil, Trash2, Check, X } from "lucide-react";
 import type { Session } from "@/hooks/timer/shared";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SessionSidebarProps {
   sessions: Session[];
@@ -27,9 +47,20 @@ export function SessionSidebar({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  const handleAdd = () => {
-    const name = window.prompt("Session name:");
-    if (name && name.trim()) onAdd(name.trim());
+  const [addOpen, setAddOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
+
+  const openAdd = () => {
+    setNewName("");
+    setAddOpen(true);
+  };
+
+  const submitAdd = (e: FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    onAdd(newName.trim());
+    setAddOpen(false);
   };
 
   const startRename = (session: Session) => {
@@ -55,7 +86,7 @@ export function SessionSidebar({
       <div className="flex items-center justify-between px-4 h-14 shrink-0 border-b border-sidebar-border">
         <span className="text-xs font-bold uppercase tracking-wider opacity-60">Sessions</span>
         <button
-          onClick={handleAdd}
+          onClick={openAdd}
           aria-label="New session"
           className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold opacity-70 hover:opacity-100 hover:bg-sidebar-accent transition cursor-pointer"
         >
@@ -164,8 +195,7 @@ export function SessionSidebar({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm(`Delete "${session.name}"?`))
-                        onDelete(session.id);
+                      setDeleteTarget(session);
                     }}
                     aria-label="Delete"
                     className="hidden group-hover:block p-1 rounded opacity-60 hover:opacity-100 hover:text-destructive transition-all cursor-pointer"
@@ -178,6 +208,60 @@ export function SessionSidebar({
           );
         })}
       </div>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-md">
+          <form onSubmit={submitAdd} className="grid gap-4">
+            <DialogHeader>
+              <DialogTitle>New session</DialogTitle>
+              <DialogDescription>
+                Each session keeps its own tasks and timer settings.
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g. Deep work, Study, Side project"
+              maxLength={60}
+              aria-label="Session name"
+            />
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!newName.trim()}>
+                Create session
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &ldquo;{deleteTarget?.name}&rdquo;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`This session and its ${deleteTarget?.tasks.length ?? 0} task${
+                deleteTarget?.tasks.length === 1 ? "" : "s"
+              } will be permanently removed. This can't be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => deleteTarget && onDelete(deleteTarget.id)}
+            >
+              Delete session
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }
