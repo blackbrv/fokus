@@ -18,7 +18,7 @@ function GithubIcon({ size = 16 }: { size?: number }) {
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-[#323232] text-[#EFEFEF] px-10 pt-10 pb-6 mt-auto border-t border-[#EFEFEF]/50">
+    <footer className="w-full bg-foreground text-background px-10 pt-10 pb-6 mt-auto border-t border-background/50">
       {/* Upper */}
       <div className="mx-auto max-w-[1200px] flex items-start justify-between">
         {/* Brand */}
@@ -32,7 +32,7 @@ export default function Footer() {
           />
           <div className="flex flex-col gap-1">
             <span className="text-3xl font-bold">Fokus</span>
-            <span className="text-sm text-[#EFEFEF]/55 leading-snug">
+            <span className="text-sm text-background/55 leading-snug">
               Focused Output
               <br />
               Keeps Us Sharp.
@@ -41,28 +41,30 @@ export default function Footer() {
         </div>
 
         {/* Nav links — 2-col grid */}
-        <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm font-semibold text-[#EFEFEF]/70">
-          <Link href="/timer" className="hover:text-[#EFEFEF] transition-colors">
+        <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm font-semibold text-background/70">
+          <Link href="/timer" className="hover:text-background transition-colors">
             Timer
           </Link>
-          <Link href="/tasks" className="hover:text-[#EFEFEF] transition-colors">
+          <Link href="/tasks" className="hover:text-background transition-colors">
             Tasks
           </Link>
-          <Link href="/settings" className="hover:text-[#EFEFEF] transition-colors">
+          <Link href="/settings" className="hover:text-background transition-colors">
             Settings
           </Link>
-          <span />
-          <Link href="/reports" className="hover:text-[#EFEFEF] transition-colors">
+          <Link href="/themes" className="hover:text-background transition-colors">
+            Themes
+          </Link>
+          <Link href="/reports" className="hover:text-background transition-colors">
             Reports
           </Link>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="mx-auto max-w-[1200px] border-t border-[#EFEFEF]/15 my-6" />
+      <div className="mx-auto max-w-[1200px] border-t border-background/15 my-6" />
 
       {/* Copyright bar */}
-      <div className="mx-auto max-w-[1200px] flex items-center justify-between text-sm text-[#EFEFEF]/45">
+      <div className="mx-auto max-w-[1200px] flex items-center justify-between text-sm text-background/45">
         <span>©2026 Fokus - All rights reserved</span>
         <div className="flex items-center gap-2">
           <Link
