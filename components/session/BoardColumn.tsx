@@ -2,14 +2,17 @@
 
 import { Droppable } from "@hello-pangea/dnd";
 import { Plus } from "lucide-react";
-import { BoardTaskCard } from "./BoardTaskCard";
-import { BoardTaskCardContent } from "./BoardTaskCardContent";
+import { cn } from "@/lib/utils";
+import { BoardTaskCard, CARD_CLASS } from "./BoardTaskCard";
+import { BoardTaskCardContent, StatusDot, STATUS_META } from "./BoardTaskCardContent";
 import type { Task, TaskStatus } from "@/hooks/timer/shared";
 
 interface BoardColumnProps {
   status: TaskStatus;
-  label: string;
   tasks: Task[];
+  selectedId: string | null;
+  dragDisabled: boolean;
+  onSelect: (task: Task) => void;
   onOpenAdd: (status: TaskStatus) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
@@ -18,8 +21,10 @@ interface BoardColumnProps {
 
 export function BoardColumn({
   status,
-  label,
   tasks,
+  selectedId,
+  dragDisabled,
+  onSelect,
   onOpenAdd,
   onEdit,
   onDelete,
@@ -27,20 +32,28 @@ export function BoardColumn({
 }: BoardColumnProps) {
   return (
     <div
-      className="flex flex-col rounded-xl bg-foreground/[0.03] border border-foreground/10 min-w-[220px] max-w-[280px] flex-1"
+      className="flex min-w-0 flex-col"
       data-aos="fade-up"
       data-aos-duration="500"
       data-aos-delay={aosDelay}
       data-aos-offset="0"
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-        <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
-          {label}
+      <div className="flex items-center gap-2 px-1 pb-3">
+        <StatusDot status={status} />
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {STATUS_META[status].label}
         </span>
-        <span className="text-xs font-semibold text-foreground/30 bg-foreground/5 px-1.5 py-0.5 rounded-full">
+        <span className="ml-auto text-xs font-semibold text-muted-foreground">
           {tasks.length}
         </span>
+        <button
+          onClick={() => onOpenAdd(status)}
+          aria-label={`Add task to ${STATUS_META[status].label}`}
+          className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+        >
+          <Plus size={14} />
+        </button>
       </div>
 
       {/* Task list */}
@@ -53,43 +66,47 @@ export function BoardColumn({
               ref={provided.innerRef}
               {...provided.draggableProps}
               {...provided.dragHandleProps}
-              className="flex items-start gap-1.5 px-2.5 py-2 rounded-lg bg-foreground text-background shadow-xl opacity-90 cursor-grabbing"
+              className={cn(CARD_CLASS, "bg-card text-card-foreground shadow-xl cursor-grabbing")}
             >
               {task && <BoardTaskCardContent task={task} />}
             </div>
           );
         }}
       >
-        {(provided) => (
+        {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="flex flex-col gap-1.5 px-2 pb-2 min-h-[60px] flex-1"
+            className={cn(
+              "flex min-h-[120px] flex-1 flex-col gap-2 rounded-xl p-1 transition-colors",
+              snapshot.isDraggingOver && "bg-muted",
+            )}
           >
             {tasks.map((task, index) => (
               <BoardTaskCard
                 key={task.id}
                 task={task}
                 index={index}
+                selected={task.id === selectedId}
+                dragDisabled={dragDisabled}
+                onSelect={onSelect}
                 onEdit={onEdit}
                 onDelete={onDelete}
               />
             ))}
             {provided.placeholder}
+
+            {tasks.length === 0 && !snapshot.isDraggingOver && (
+              <button
+                onClick={() => onOpenAdd(status)}
+                className="flex h-[88px] items-center justify-center gap-1.5 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground hover:border-ring hover:text-foreground transition-colors cursor-pointer"
+              >
+                <Plus size={13} /> Add task
+              </button>
+            )}
           </div>
         )}
       </Droppable>
-
-      {/* Footer: open add dialog */}
-      <div className="px-2 pb-2">
-        <button
-          onClick={() => onOpenAdd(status)}
-          className="w-full flex items-center gap-1.5 h-9 px-2.5 rounded-lg text-xs font-semibold text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer"
-        >
-          <Plus size={13} />
-          Add task
-        </button>
-      </div>
     </div>
   );
 }

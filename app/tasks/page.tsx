@@ -1,21 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Play, Search, ChevronRight } from "lucide-react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useSessions } from "@/hooks/timer/use-sessions";
 import { SessionSidebar } from "@/components/session/SessionSidebar";
 import { BoardColumn } from "@/components/session/BoardColumn";
+import { TaskDetail } from "@/components/session/TaskDetail";
 import { TaskDialog } from "@/components/timer/task-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import type { Task, TaskStatus } from "@/hooks/timer/shared";
-
-const COLUMNS: { status: TaskStatus; label: string }[] = [
-  { status: "todo", label: "To Do" },
-  { status: "in-progress", label: "In Progress" },
-  { status: "done", label: "Done" },
-];
 
 const COLUMN_ORDER: TaskStatus[] = ["todo", "in-progress", "done"];
 
@@ -36,6 +34,8 @@ export default function TasksPage() {
   const [addTargetStatus, setAddTargetStatus] = useState<TaskStatus>("todo");
   const [editOpen, setEditOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const handleDragEnd = (result: DropResult) => {
     if (!activeSession) return;
@@ -118,6 +118,14 @@ export default function TasksPage() {
     toast("Task deleted", { icon: <Plus className="size-4" /> });
   };
 
+  const setTaskStatus = (id: string, status: TaskStatus) => {
+    if (!activeSession) return;
+    updateSessionTasks(
+      activeSession.id,
+      activeSession.tasks.map((t) => (t.id === id ? { ...t, status } : t)),
+    );
+  };
+
   const handleStart = (sessionId: string) => {
     setActiveSessionId(sessionId);
     router.push("/timer");
@@ -133,9 +141,17 @@ export default function TasksPage() {
     );
   }
 
+  const tasks = activeSession.tasks;
+  const doneCount = tasks.filter((t) => t.status === "done").length;
+  const selectedTask = tasks.find((t) => t.id === selectedId) ?? null;
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? tasks.filter((t) => `${t.title} ${t.note}`.toLowerCase().includes(q))
+    : tasks;
+
   return (
     <>
-      <div className="flex flex-1 min-h-screen pt-4 pb-24 px-4 gap-4 font-sans">
+      <div className="flex min-h-screen flex-1 flex-col gap-4 px-4 pt-2 pb-24 font-sans lg:flex-row lg:items-start">
         <SessionSidebar
           sessions={sessions}
           activeSessionId={activeSessionId}
@@ -146,17 +162,66 @@ export default function TasksPage() {
           onStart={handleStart}
         />
 
-        <main className="flex-1 flex items-start justify-center min-w-0 pt-6">
+        <main className="flex min-w-0 flex-1 flex-col gap-6 rounded-xl border bg-card/40 p-4 sm:p-6">
+          {/* Header */}
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <nav className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+              <span>Tasks</span>
+              <ChevronRight className="size-3.5 shrink-0" />
+              <span className="truncate font-semibold text-foreground">
+                {activeSession.name}
+              </span>
+            </nav>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => openAdd("todo")}>
+                <Plus /> New task
+              </Button>
+              <Button onClick={() => handleStart(activeSession.id)}>
+                <Play /> Start focus
+              </Button>
+            </div>
+          </header>
+
+          {/* Toolbar */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search tasks..."
+                className="bg-background pl-9"
+              />
+            </div>
+            <div className="flex flex-1 items-center gap-3 sm:justify-end">
+              <span className="text-xs font-semibold whitespace-nowrap text-muted-foreground">
+                {doneCount}/{tasks.length} done
+              </span>
+              <Progress
+                value={tasks.length ? (doneCount / tasks.length) * 100 : 0}
+                className="h-1.5 sm:max-w-40"
+              />
+            </div>
+          </div>
+          {q && (
+            <p className="-mt-3 text-xs text-muted-foreground">
+              Showing {visible.length} of {tasks.length} tasks. Drag and drop is
+              paused while searching.
+            </p>
+          )}
+
+          {/* Board */}
           <DragDropContext onDragEnd={handleDragEnd}>
-            <div className="flex items-start gap-3 overflow-x-auto pb-4 max-w-[900px] w-full">
-              {COLUMNS.map((col, i) => (
+            <div className="grid gap-4 md:grid-cols-3">
+              {COLUMN_ORDER.map((status, i) => (
                 <BoardColumn
-                  key={col.status}
-                  status={col.status}
-                  label={col.label}
-                  tasks={activeSession.tasks.filter(
-                    (t) => t.status === col.status,
-                  )}
+                  key={status}
+                  status={status}
+                  tasks={visible.filter((t) => t.status === status)}
+                  selectedId={selectedId}
+                  // Drop indices are column-relative, so they're only valid unfiltered.
+                  dragDisabled={!!q}
+                  onSelect={(t) => setSelectedId(t.id)}
                   onOpenAdd={openAdd}
                   onEdit={openEdit}
                   onDelete={deleteTask}
@@ -166,6 +231,17 @@ export default function TasksPage() {
             </div>
           </DragDropContext>
         </main>
+
+        {selectedTask && (
+          <TaskDetail
+            task={selectedTask}
+            sessionName={activeSession.name}
+            onStatus={(s) => setTaskStatus(selectedTask.id, s)}
+            onEdit={() => openEdit(selectedTask)}
+            onDelete={() => deleteTask(selectedTask.id)}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
       </div>
 
       {addOpen && (
