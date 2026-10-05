@@ -11,6 +11,8 @@ interface BoardTaskCardProps {
   index: number;
   selected: boolean;
   dragDisabled: boolean;
+  /** Play the enter animation on mount (off for a card that was just dropped). */
+  animateIn: boolean;
   onSelect: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
@@ -24,6 +26,7 @@ export function BoardTaskCard({
   index,
   selected,
   dragDisabled,
+  animateIn,
   onSelect,
   onEdit,
   onDelete,
@@ -35,13 +38,20 @@ export function BoardTaskCard({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          style={{
+            ...provided.draggableProps.style,
+            // Stagger, capped so long columns don't wait forever.
+            animationDelay: `${Math.min(index, 6) * 40}ms`,
+          }}
           onClick={() => onSelect(task)}
           onKeyDown={(e) => {
             if (e.key === "Enter") onSelect(task);
           }}
           className={cn(
             CARD_CLASS,
-            "cursor-pointer",
+            "cursor-pointer duration-200",
+            animateIn &&
+              "animate-in fade-in-0 slide-in-from-bottom-2 duration-300 fill-mode-backwards",
             selected
               ? "border-primary bg-primary text-primary-foreground shadow-lg"
               : "bg-card text-card-foreground hover:border-ring hover:shadow-sm",

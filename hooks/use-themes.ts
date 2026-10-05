@@ -14,10 +14,19 @@ const SERVER_STATE: State = { custom: [], activeId: PRESET_THEMES[0].id };
 const listeners = new Set<() => void>();
 let state: State | null = null;
 
+// Fill tokens added after a theme was saved with the Default theme's values.
+const withAllTokens = (t: Theme): Theme => ({
+  ...t,
+  light: { ...PRESET_THEMES[0].light, ...t.light },
+  dark: { ...PRESET_THEMES[0].dark, ...t.dark },
+});
+
 function read(): State {
   try {
     return {
-      custom: JSON.parse(localStorage.getItem(CUSTOM_THEMES_KEY) ?? "[]"),
+      custom: (JSON.parse(localStorage.getItem(CUSTOM_THEMES_KEY) ?? "[]") as Theme[]).map(
+        withAllTokens,
+      ),
       activeId: localStorage.getItem(ACTIVE_THEME_KEY) ?? SERVER_STATE.activeId,
     };
   } catch {

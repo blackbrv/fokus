@@ -1,7 +1,8 @@
 "use client";
 
+import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Task, TaskStatus } from "@/hooks/timer/shared";
+import { formatTaskTime, type Task, type TaskStatus } from "@/hooks/timer/shared";
 
 export const STATUS_META: Record<TaskStatus, { label: string; dot: string }> = {
   todo: { label: "To Do", dot: "bg-muted-foreground" },
@@ -29,6 +30,16 @@ export function BoardTaskCardContent({ task }: { task: Task }) {
       <div className="mt-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
         <StatusDot status={task.status} className="size-1.5" />
         {STATUS_META[task.status].label}
+        {task.createdAt && (
+          <time
+            dateTime={new Date(task.createdAt).toISOString()}
+            title="Created"
+            className="ml-auto flex items-center gap-1 font-medium normal-case tracking-normal"
+          >
+            <Clock className="size-3" />
+            {formatTaskTime(task.createdAt)}
+          </time>
+        )}
       </div>
     </div>
   );

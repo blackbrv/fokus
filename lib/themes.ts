@@ -12,6 +12,7 @@ export const TOKEN_GROUPS = {
   Accent: ["accent", "accent-foreground"],
   Destructive: ["destructive"],
   Borders: ["border", "input", "ring"],
+  Selection: ["selection", "selection-foreground"],
   Charts: ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"],
   Sidebar: [
     "sidebar",
@@ -65,6 +66,8 @@ const DEFAULT: Theme = {
     "sidebar-accent-foreground": "oklch(0.205 0 0)",
     "sidebar-border": "oklch(0.922 0 0)",
     "sidebar-ring": "oklch(0.708 0 0)",
+    selection: "oklch(0.205 0 0)",
+    "selection-foreground": "oklch(0.985 0 0)",
   },
   dark: {
     background: "oklch(0.3171 0 0)",
@@ -98,12 +101,14 @@ const DEFAULT: Theme = {
     "sidebar-accent-foreground": "oklch(0.985 0 0)",
     "sidebar-border": "oklch(1 0 0 / 10%)",
     "sidebar-ring": "oklch(0.556 0 0)",
+    selection: "oklch(0.922 0 0)",
+    "selection-foreground": "oklch(0.205 0 0)",
   },
 };
 
 // Builds a light + dark palette tinted around a single hue.
 function tinted(id: string, name: string, h: number, c = 0.15): Theme {
-  const o = (l: number, ch: number, hue = h) => `oklch(${l} ${ch} ${hue})`;
+  const o = (l: number, ch: number, hue = h) => `oklch(${l} ${+ch.toFixed(3)} ${hue})`;
   const charts = [0, 50, 110, 180, 260].map((d) => (h + d) % 360);
   const chartsOf = (l: number) =>
     Object.fromEntries(charts.map((hue, i) => [`chart-${i + 1}`, o(l, c, hue)]));
@@ -136,6 +141,8 @@ function tinted(id: string, name: string, h: number, c = 0.15): Theme {
     "sidebar-accent-foreground": o(0.25, 0.06),
     "sidebar-border": o(0.9, 0.02),
     "sidebar-ring": o(0.55, c),
+    selection: o(0.85, c * 0.6),
+    "selection-foreground": o(0.2, 0.05),
   } as Palette;
 
   const dark = {
@@ -166,6 +173,8 @@ function tinted(id: string, name: string, h: number, c = 0.15): Theme {
     "sidebar-accent-foreground": o(0.96, 0.01),
     "sidebar-border": "oklch(1 0 0 / 10%)",
     "sidebar-ring": o(0.7, c),
+    selection: o(0.45, c * 0.8),
+    "selection-foreground": o(0.98, 0.01),
   } as Palette;
 
   return { id, name, light, dark };
