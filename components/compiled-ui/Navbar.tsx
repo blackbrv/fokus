@@ -11,7 +11,8 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "../ui/navigation-menu";
-import { Clock, Settings, BarChart3 } from "lucide-react";
+import { Clock, Settings, BarChart3, Palette } from "lucide-react";
+import { ThemeDialog } from "@/components/theme/ThemeDialog";
 
 const timerMenuItems = [
   {
@@ -105,8 +106,27 @@ export default function Navbar() {
               </NavigationMenuLink>
             </NavigationMenuItem>
 
+            {/* Themes */}
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                asChild
+                className="font-semibold text-background hover:bg-background hover:text-foreground"
+              >
+                <Link href="/themes">Themes</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+
           </NavigationMenuList>
         </NavigationMenu>
+
+        <ThemeDialog>
+          <button
+            aria-label="Customize theme"
+            className="ml-1 flex size-9 items-center justify-center rounded-md text-background/70 hover:bg-background hover:text-foreground transition-colors cursor-pointer"
+          >
+            <Palette className="size-4" />
+          </button>
+        </ThemeDialog>
       </div>
     </div>
   );
