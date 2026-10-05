@@ -36,6 +36,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --selection: oklch(0.205 0 0);
+  --selection-foreground: oklch(0.985 0 0);
 }
 
 .dark {
@@ -70,6 +72,8 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --selection: oklch(0.922 0 0);
+  --selection-foreground: oklch(0.205 0 0);
 }
 
 @theme inline {
@@ -104,6 +108,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-selection: var(--selection);
+  --color-selection-foreground: var(--selection-foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --radius-sm: calc(var(--radius) - 4px);
@@ -118,5 +124,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  ::selection {
+    background-color: var(--selection);
+    color: var(--selection-foreground);
   }
 }
