@@ -25,7 +25,7 @@ Pomodoro timer app — fully client-side, no backend, no database.
 
 ## Architecture
 - **Timer engine**: `hooks/timer/use-timer.ts` with 3 modes (`pomodoro | short-break | long-break`) and `adjustMinutes(delta)` for ±1 min adjustment. Auto-cycles between modes.
-- **Sessions**: `hooks/timer/use-sessions.tsx` — multi-session CRUD persisted to `localStorage` under `"fokus-sessions"`. Active session ID stored in `"fokus-active-session"`. Each session has its own settings, timer state, and task list. Legacy `"fokus-tasks"` key auto-migrated.
+- **Sessions**: `hooks/timer/use-sessions.tsx` — multi-session CRUD persisted to `localStorage` under `"fokus-sessions"`. Active session ID stored in `"fokus-active-session"`. Each session has its own settings, timer state, and task list. Legacy `"fokus-tasks"` key auto-migrated. `updateSessionTasks` runs `trackTaskChanges()` (in `shared.ts`), which stamps `createdAt` on new tasks and appends `history` events (created / renamed / note / status) — so callers just pass the new task list.
 - **Kanban board**: `/tasks` page has 3 columns (To Do / In Progress / Done) using `@hello-pangea/dnd` `Droppable`/`Draggable`. Sidebar for session management (`SessionSidebar` component).
 - **Shared types**: `hooks/timer/shared.ts` — `TimerMode`, `TaskStatus`, `Task`, `SessionSettings`, `TimerState`, `Session`, constants, and utility functions (`loadSettings()`, `fmt(seconds)`).
 - **Audio**: `hooks/use-audio.ts` — Web Audio API tone generator (`playBreakChime()`, `playFocusChime()`).
