@@ -12,6 +12,7 @@ interface BoardColumnProps {
   tasks: Task[];
   selectedId: string | null;
   dragDisabled: boolean;
+  droppedId: string | null;
   onSelect: (task: Task) => void;
   onOpenAdd: (status: TaskStatus) => void;
   onEdit: (task: Task) => void;
@@ -24,6 +25,7 @@ export function BoardColumn({
   tasks,
   selectedId,
   dragDisabled,
+  droppedId,
   onSelect,
   onOpenAdd,
   onEdit,
@@ -89,6 +91,7 @@ export function BoardColumn({
                 index={index}
                 selected={task.id === selectedId}
                 dragDisabled={dragDisabled}
+                animateIn={task.id !== droppedId}
                 onSelect={onSelect}
                 onEdit={onEdit}
                 onDelete={onDelete}
@@ -99,7 +102,7 @@ export function BoardColumn({
             {tasks.length === 0 && !snapshot.isDraggingOver && (
               <button
                 onClick={() => onOpenAdd(status)}
-                className="flex h-[88px] items-center justify-center gap-1.5 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground hover:border-ring hover:text-foreground transition-colors cursor-pointer"
+                className="flex h-[88px] animate-in fade-in-0 zoom-in-95 duration-300 items-center justify-center gap-1.5 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground hover:border-ring hover:text-foreground transition-colors cursor-pointer"
               >
                 <Plus size={13} /> Add task
               </button>

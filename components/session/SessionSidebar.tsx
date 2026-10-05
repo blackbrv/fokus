@@ -103,15 +103,17 @@ export function SessionSidebar({
           </p>
         )}
 
-        {sessions.map((session) => {
+        {sessions.map((session, i) => {
           const isActive = session.id === activeSessionId;
           const isEditing = editingId === session.id;
 
           return (
             <div
               key={session.id}
+              style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               className={cn(
-                "group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors",
+                "group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-[background-color,opacity] duration-200",
+                "animate-in fade-in-0 slide-in-from-left-2 duration-300 fill-mode-backwards",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "opacity-70 hover:opacity-100 hover:bg-sidebar-accent/60",
@@ -157,7 +159,8 @@ export function SessionSidebar({
                   <span
                     className={cn(
                       "size-1.5 shrink-0 rounded-full",
-                      isActive ? "bg-sidebar-primary" : "bg-current opacity-30",
+                      "transition-[background-color,opacity,transform] duration-300",
+                      isActive ? "scale-125 bg-sidebar-primary" : "bg-current opacity-30",
                     )}
                   />
                   <span className="flex-1 truncate text-sm font-semibold">

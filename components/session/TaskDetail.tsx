@@ -24,7 +24,7 @@ export function TaskDetail({
   onClose,
 }: TaskDetailProps) {
   return (
-    <aside className="sticky top-24 hidden w-[320px] shrink-0 flex-col self-start rounded-xl border bg-card text-card-foreground xl:flex">
+    <aside className="sticky top-24 hidden w-[320px] shrink-0 flex-col self-start rounded-xl border bg-card text-card-foreground animate-in fade-in-0 slide-in-from-right-4 duration-300 xl:flex">
       <div className="flex items-center justify-between border-b px-5 py-3 text-xs text-muted-foreground">
         <span>
           In <span className="font-semibold text-foreground">{sessionName}</span>
@@ -38,7 +38,11 @@ export function TaskDetail({
         </button>
       </div>
 
-      <div className="flex flex-col gap-6 p-5">
+      {/* Keyed by task so the content cross-fades when another card is picked. */}
+      <div
+        key={task.id}
+        className="flex flex-col gap-6 p-5 animate-in fade-in-0 slide-in-from-bottom-1 duration-200"
+      >
         <h2 className="text-xl font-bold leading-tight break-words">{task.title}</h2>
 
         <div>
@@ -52,7 +56,7 @@ export function TaskDetail({
                 onClick={() => onStatus(s)}
                 aria-pressed={task.status === s}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer",
+                  "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-[color,background-color,border-color,transform] duration-200 active:scale-95 cursor-pointer",
                   task.status === s
                     ? "border-primary bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",

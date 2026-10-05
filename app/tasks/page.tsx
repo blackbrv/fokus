@@ -36,6 +36,9 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  // A dropped card remounts in its new column; skip its enter animation since
+  // the drag library already animated the drop.
+  const [droppedId, setDroppedId] = useState<string | null>(null);
 
   const handleDragEnd = (result: DropResult) => {
     if (!activeSession) return;
@@ -68,6 +71,7 @@ export default function TasksPage() {
         : withoutMoved.filter((t) => t.status === status),
     );
 
+    setDroppedId(draggableId);
     updateSessionTasks(activeSession.id, finalTasks);
   };
 
@@ -120,6 +124,7 @@ export default function TasksPage() {
 
   const setTaskStatus = (id: string, status: TaskStatus) => {
     if (!activeSession) return;
+    setDroppedId(null);
     updateSessionTasks(
       activeSession.id,
       activeSession.tasks.map((t) => (t.id === id ? { ...t, status } : t)),
@@ -168,7 +173,10 @@ export default function TasksPage() {
             <nav className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
               <span>Tasks</span>
               <ChevronRight className="size-3.5 shrink-0" />
-              <span className="truncate font-semibold text-foreground">
+              <span
+                key={activeSession.id}
+                className="truncate font-semibold text-foreground animate-in fade-in-0 slide-in-from-left-2 duration-300"
+              >
                 {activeSession.name}
               </span>
             </nav>
@@ -199,12 +207,12 @@ export default function TasksPage() {
               </span>
               <Progress
                 value={tasks.length ? (doneCount / tasks.length) * 100 : 0}
-                className="h-1.5 sm:max-w-40"
+                className="h-1.5 sm:max-w-40 *:duration-500 *:ease-out"
               />
             </div>
           </div>
           {q && (
-            <p className="-mt-3 text-xs text-muted-foreground">
+            <p className="-mt-3 text-xs text-muted-foreground animate-in fade-in-0 slide-in-from-top-1 duration-200">
               Showing {visible.length} of {tasks.length} tasks. Drag and drop is
               paused while searching.
             </p>
@@ -212,7 +220,8 @@ export default function TasksPage() {
 
           {/* Board */}
           <DragDropContext onDragEnd={handleDragEnd}>
-            <div className="grid gap-4 md:grid-cols-3">
+            {/* Keyed by session so switching sessions replays the card stagger. */}
+            <div key={activeSession.id} className="grid gap-4 md:grid-cols-3">
               {COLUMN_ORDER.map((status, i) => (
                 <BoardColumn
                   key={status}
@@ -221,6 +230,7 @@ export default function TasksPage() {
                   selectedId={selectedId}
                   // Drop indices are column-relative, so they're only valid unfiltered.
                   dragDisabled={!!q}
+                  droppedId={droppedId}
                   onSelect={(t) => setSelectedId(t.id)}
                   onOpenAdd={openAdd}
                   onEdit={openEdit}
