@@ -15,6 +15,7 @@ import {
   DEFAULT_SESSION_SETTINGS,
   DEFAULT_TIMER_STATE,
   loadSettings,
+  trackTaskChanges,
 } from "./shared";
 
 function migrateTask(t: Record<string, unknown>): Task {
@@ -197,7 +198,9 @@ export function useSessions() {
 
   const updateSessionTasks = useCallback((id: string, tasks: Task[]) => {
     setSessions((prev) => {
-      const next = prev.map((s) => (s.id === id ? { ...s, tasks } : s));
+      const next = prev.map((s) =>
+        s.id === id ? { ...s, tasks: trackTaskChanges(s.tasks, tasks) } : s,
+      );
       localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
       return next;
     });
