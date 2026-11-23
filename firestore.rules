@@ -1,0 +1,45 @@
+rules_version = '2';
+// Source of truth for the Firestore rules. Deploy by pasting into
+// Firebase console → Firestore → Rules (no CLI needed).
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function validUsername(n) { return n is string && n.matches('^[a-z0-9_]{3,20}$'); }
+    function nameDoc(n) { return /databases/$(db)/documents/usernames/$(n); }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['displayName', 'username', 'createdAt', 'settings'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 50
+        && validUsername(request.resource.data.username)
+        && getAfter(nameDoc(request.resource.data.username)).data.uid == uid
+        // Changing username must release the old one in the same write.
+        && (resource == null
+            || resource.data.username == request.resource.data.username
+            || !existsAfter(nameDoc(resource.data.username)));
+      allow delete: if false;
+
+      match /sessions/{sessionId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['id', 'name', 'settings', 'timerState', 'tasks', 'order'])
+          && request.resource.data.id == sessionId
+          && request.resource.data.order is number
+          && request.resource.data.tasks is list;
+      }
+    }
+
+    match /usernames/{name} {
+      allow get: if true;            // availability check, works before sign-up
+      allow list, update: if false;  // no enumerating usernames
+      allow create: if request.auth != null && validUsername(name)
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && getAfter(/databases/$(db)/documents/users/$(request.auth.uid)).data.username == name;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+  }
+}

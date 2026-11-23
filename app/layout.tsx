@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AosProvider } from "@/components/aos-provider";
+import { AuthProvider } from "@/hooks/use-auth";
 import "./globals.css";
 import Navbar from "@/components/compiled-ui/Navbar";
 import Footer from "@/components/compiled-ui/Footer";
@@ -91,13 +92,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>
-            <AosProvider>
-              <Navbar />
-              {children}
-              <Footer />
-            </AosProvider>
-          </TooltipProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <AosProvider>
+                <Navbar />
+                {children}
+                <Footer />
+              </AosProvider>
+            </TooltipProvider>
+          </AuthProvider>
           <Toaster richColors position="top-right" />
           <Script
             id="structured-data"
