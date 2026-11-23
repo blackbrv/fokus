@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { onSnapshot } from "firebase/firestore";
 import { toast } from "sonner";
 import { Layers, Trash2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { fromSnapshot, sessionsCol, syncToCloud } from "./cloud";
 import type { TaskStatus } from "./shared";
 import {
   type Session,
@@ -15,6 +18,7 @@ import {
   DEFAULT_SESSION_SETTINGS,
   DEFAULT_TIMER_STATE,
   loadSettings,
+  mergeSessions,
   trackTaskChanges,
 } from "./shared";
 
@@ -37,7 +41,7 @@ function migrateSessionTasks(session: Session): Session {
   };
 }
 
-function loadSessions(): Session[] {
+export function loadSessions(): Session[] {
   if (typeof window === "undefined") return [];
 
   try {
@@ -107,14 +111,55 @@ export function useSessions() {
     [sessions, activeSessionId],
   );
 
-  // Load from localStorage once on mount.
-  useEffect(() => {
-    const s = loadSessions();
-    const id = loadActiveSessionId(s);
-    setSessions(s);
-    setActiveSessionIdState(id);
-    setIsLoaded(true);
+  const { user, loading: authLoading } = useAuth();
+  const uid = user?.uid ?? null;
+  const uidRef = useRef<string | null>(null);
+
+  /** Persists a state transition: Firestore when signed in, localStorage for guests. */
+  const commit = useCallback((prev: Session[], next: Session[]) => {
+    const cloudUid = uidRef.current;
+    if (cloudUid) {
+      syncToCloud(cloudUid, prev, next).catch(() =>
+        toast.error("Couldn't sync your changes. They'll stay on this device."),
+      );
+    } else {
+      localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
+    }
+    return next;
   }, []);
+
+  // Signed in: live Firestore snapshot (works offline from the IndexedDB cache).
+  // Guest: localStorage, as before. Re-runs on sign-in / sign-out.
+  useEffect(() => {
+    if (authLoading) return;
+    uidRef.current = uid;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (!uid) {
+      const s = loadSessions();
+      setSessions(s);
+      setActiveSessionIdState(loadActiveSessionId(s));
+      setIsLoaded(true);
+      return;
+    }
+    setIsLoaded(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    return onSnapshot(
+      sessionsCol(uid),
+      { includeMetadataChanges: true },
+      (snap) => {
+        // An empty local cache isn't an answer yet; wait for the server.
+        if (snap.empty && snap.metadata.fromCache) return;
+        const s = fromSnapshot(snap);
+        setSessions(s);
+        setActiveSessionIdState((cur) => (s.some((x) => x.id === cur) ? cur : loadActiveSessionId(s)));
+        setIsLoaded(true);
+      },
+      () => {
+        toast.error("Couldn't load your sessions from the cloud.");
+        setIsLoaded(true);
+      },
+    );
+  }, [uid, authLoading]);
 
   const setActiveSessionId = useCallback((id: string) => {
     setActiveSessionIdState(id);
@@ -138,22 +183,20 @@ export function useSessions() {
       };
       setSessions((prev) => {
         const next = [...prev, newSession];
-        localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-        return next;
+        return commit(prev, next);
       });
       setActiveSessionId(newSession.id);
       toast("Session created", { icon: <Layers className="size-4" /> });
     },
-    [setActiveSessionId],
+    [setActiveSessionId, commit],
   );
 
   const renameSession = useCallback((id: string, name: string) => {
     setSessions((prev) => {
       const next = prev.map((s) => (s.id === id ? { ...s, name: name.trim() } : s));
-      localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-      return next;
+      return commit(prev, next);
     });
-  }, []);
+  }, [commit]);
 
   const deleteSession = useCallback(
     (id: string) => {
@@ -168,19 +211,16 @@ export function useSessions() {
             tasks: [],
           };
           setActiveSessionId(fresh.id);
-          const next = [fresh];
-          localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-          return next;
+          return commit(prev, [fresh]);
         }
         if (id === activeSessionId) {
           setActiveSessionId(remaining[0].id);
         }
-        localStorage.setItem(SESSIONS_KEY, JSON.stringify(remaining));
-        return remaining;
+        return commit(prev, remaining);
       });
       toast("Session deleted", { icon: <Trash2 className="size-4" /> });
     },
-    [activeSessionId, setActiveSessionId],
+    [activeSessionId, setActiveSessionId, commit],
   );
 
   const updateSessionSettings = useCallback(
@@ -189,11 +229,10 @@ export function useSessions() {
         const next = prev.map((s) =>
           s.id === id ? { ...s, settings: { ...s.settings, ...settings } } : s,
         );
-        localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-        return next;
+        return commit(prev, next);
       });
     },
-    [],
+    [commit],
   );
 
   const updateSessionTasks = useCallback((id: string, tasks: Task[]) => {
@@ -201,10 +240,9 @@ export function useSessions() {
       const next = prev.map((s) =>
         s.id === id ? { ...s, tasks: trackTaskChanges(s.tasks, tasks) } : s,
       );
-      localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-      return next;
+      return commit(prev, next);
     });
-  }, []);
+  }, [commit]);
 
   const updateSessionTimerState = useCallback(
     (id: string, timerState: Partial<TimerState>) => {
@@ -214,23 +252,28 @@ export function useSessions() {
             ? { ...s, timerState: { ...s.timerState, ...timerState } }
             : s,
         );
-        localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-        return next;
+        return commit(prev, next);
       });
     },
-    [],
+    [commit],
   );
+
+  /** Restores sessions as-is (history untouched): same id replaces, new ids append. */
+  const importSessions = useCallback((incoming: Session[]) => {
+    setSessions((prev) => {
+      const next = mergeSessions(prev, incoming);
+      return commit(prev, next);
+    });
+  }, [commit]);
 
   const stopAllTimers = useCallback(() => {
     setSessions((prev) => {
-      const next = prev.map((s) => ({
-        ...s,
-        timerState: { ...s.timerState, isRunning: false },
-      }));
-      localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-      return next;
+      const next = prev.map((s) =>
+        s.timerState.isRunning ? { ...s, timerState: { ...s.timerState, isRunning: false } } : s,
+      );
+      return commit(prev, next);
     });
-  }, []);
+  }, [commit]);
 
   return {
     sessions,
@@ -244,6 +287,7 @@ export function useSessions() {
     updateSessionSettings,
     updateSessionTasks,
     updateSessionTimerState,
+    importSessions,
     stopAllTimers,
   };
 }

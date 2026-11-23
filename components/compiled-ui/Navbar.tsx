@@ -11,8 +11,18 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "../ui/navigation-menu";
-import { Clock, Settings, BarChart3, Palette } from "lucide-react";
+import { Clock, Settings, BarChart3, Palette, UserRound, LogOut } from "lucide-react";
+import { toast } from "sonner";
 import { ThemeDialog } from "@/components/theme/ThemeDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { signOut, useAuth } from "@/hooks/use-auth";
 
 const timerMenuItems = [
   {
@@ -34,6 +44,56 @@ const timerMenuItems = [
     description: "Track your focus sessions and progress",
   },
 ];
+
+const iconBtn =
+  "flex size-9 items-center justify-center rounded-md text-background/70 hover:bg-background hover:text-foreground data-[state=open]:bg-background data-[state=open]:text-foreground transition-colors cursor-pointer";
+
+function AccountButton() {
+  const { user, profile, loading } = useAuth();
+
+  if (loading || !user) {
+    return (
+      <Link href="/login" aria-label="Sign in" className={cn(iconBtn, loading && "pointer-events-none opacity-50")}>
+        <UserRound className="size-4" />
+      </Link>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button aria-label="Account menu" className={iconBtn}>
+          <UserRound className="size-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={10}
+        className="min-w-[200px] bg-foreground text-background border-background/20"
+      >
+        <DropdownMenuLabel className="flex flex-col gap-0.5">
+          <span className="truncate text-sm font-semibold">{profile?.displayName ?? user.email}</span>
+          {profile && <span className="truncate text-xs font-normal text-background/50">@{profile.username}</span>}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-background/15" />
+        <DropdownMenuItem asChild className="focus:bg-background/10 focus:text-background [&_svg]:text-background/50">
+          <Link href="/account">
+            <UserRound /> Account
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={async () => {
+            await signOut();
+            toast("Signed out", { icon: <LogOut className="size-4" /> });
+          }}
+          className="focus:bg-background/10 focus:text-background [&_svg]:text-background/50"
+        >
+          <LogOut /> Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export default function Navbar() {
   return (
@@ -127,6 +187,7 @@ export default function Navbar() {
             <Palette className="size-4" />
           </button>
         </ThemeDialog>
+        <AccountButton />
       </div>
     </div>
   );

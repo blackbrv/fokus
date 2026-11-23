@@ -28,6 +28,7 @@ export default function TasksPage() {
     renameSession,
     deleteSession,
     updateSessionTasks,
+    importSessions,
   } = useSessions();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -165,6 +166,7 @@ export default function TasksPage() {
           onRename={renameSession}
           onDelete={deleteSession}
           onStart={handleStart}
+          onImport={importSessions}
         />
 
         <main className="flex min-w-0 flex-1 flex-col gap-6 rounded-xl border bg-card/40 p-4 sm:p-6">
