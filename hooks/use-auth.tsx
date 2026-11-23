@@ -12,7 +12,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, onSnapshot, runTransaction } from "firebase/firestore";
 import { z } from "zod";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, firebaseEnabled } from "@/lib/firebase";
 
 export type Profile = { displayName: string; username: string; createdAt: number };
 
@@ -28,9 +28,10 @@ type AuthState = { user: User | null; profile: Profile | null; loading: boolean 
 const AuthContext = createContext<AuthState>({ user: null, profile: null, loading: true });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ user: null, profile: null, loading: true });
+  const [state, setState] = useState<AuthState>({ user: null, profile: null, loading: firebaseEnabled });
 
   useEffect(() => {
+    if (!firebaseEnabled) return;
     let stopProfile: (() => void) | undefined;
     const stopAuth = onAuthStateChanged(auth, (user) => {
       stopProfile?.();
@@ -58,7 +59,12 @@ export const useAuth = () => useContext(AuthContext);
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
+function requireFirebase() {
+  if (!firebaseEnabled) throw new Error("Accounts aren't available right now.");
+}
+
 export async function isUsernameAvailable(username: string): Promise<boolean> {
+  requireFirebase();
   const snap = await getDoc(doc(db, "usernames", username));
   return !snap.exists() || snap.data().uid === auth.currentUser?.uid;
 }
@@ -68,6 +74,7 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
  * one atomically. firestore.rules enforce the same invariants server-side.
  */
 export async function saveProfile(uid: string, displayName: string, username: string) {
+  requireFirebase();
   await runTransaction(db, async (tx) => {
     const userRef = doc(db, "users", uid);
     const nameRef = doc(db, "usernames", username);
@@ -87,6 +94,7 @@ export async function saveProfile(uid: string, displayName: string, username: st
 }
 
 export async function signUp(email: string, password: string, displayName: string, username: string) {
+  requireFirebase();
   if (!(await isUsernameAvailable(username))) throw new Error("That username is taken.");
   const { user } = await createUserWithEmailAndPassword(auth, email, password);
   // If this loses a race for the username, the account still exists and
@@ -94,9 +102,15 @@ export async function signUp(email: string, password: string, displayName: strin
   await saveProfile(user.uid, displayName, username);
 }
 
-export const signIn = (email: string, password: string) => signInWithEmailAndPassword(auth, email, password);
-export const signOut = () => fbSignOut(auth);
-export const resetPassword = (email: string) => sendPasswordResetEmail(auth, email);
+export async function signIn(email: string, password: string) {
+  requireFirebase();
+  return signInWithEmailAndPassword(auth, email, password);
+}
+export const signOut = () => (firebaseEnabled ? fbSignOut(auth) : Promise.resolve());
+export async function resetPassword(email: string) {
+  requireFirebase();
+  return sendPasswordResetEmail(auth, email);
+}
 
 export function authErrorMessage(e: unknown): string {
   if (!(e instanceof FirebaseError)) return e instanceof Error ? e.message : "Something went wrong.";

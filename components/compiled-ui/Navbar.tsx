@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOut, useAuth } from "@/hooks/use-auth";
+import { firebaseEnabled } from "@/lib/firebase";
 
 const timerMenuItems = [
   {
@@ -50,6 +51,7 @@ const iconBtn =
 
 function AccountButton() {
   const { user, profile, loading } = useAuth();
+  if (!firebaseEnabled) return null;
 
   if (loading || !user) {
     return (
