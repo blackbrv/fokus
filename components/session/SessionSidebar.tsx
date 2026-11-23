@@ -2,8 +2,16 @@
 
 import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
-import { Plus, Play, Pencil, Trash2, Check, X } from "lucide-react";
-import type { Session } from "@/hooks/timer/shared";
+import { Plus, Play, Pencil, Trash2, Check, X, Download, Upload, Copy } from "lucide-react";
+import { toast } from "sonner";
+import { buildExport, type Session } from "@/hooks/timer/shared";
+import { ImportDialog } from "@/components/session/ImportDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,7 +41,31 @@ interface SessionSidebarProps {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onStart?: (id: string) => void;
+  onImport: (sessions: Session[]) => void;
 }
+
+function downloadSessions(sessions: Session[]) {
+  const { filename, json } = buildExport(sessions);
+  const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast.success(`Exported ${filename}`, { icon: <Download className="size-4" /> });
+}
+
+async function copySessions(sessions: Session[]) {
+  try {
+    await navigator.clipboard.writeText(buildExport(sessions).json);
+    toast.success("Copied JSON to clipboard", { icon: <Copy className="size-4" /> });
+  } catch {
+    toast.error("Couldn't access the clipboard");
+  }
+}
+
+const headerBtn =
+  "flex items-center justify-center rounded-md p-1.5 opacity-70 hover:opacity-100 hover:bg-sidebar-accent transition cursor-pointer";
 
 export function SessionSidebar({
   sessions,
@@ -43,7 +75,9 @@ export function SessionSidebar({
   onRename,
   onDelete,
   onStart,
+  onImport,
 }: SessionSidebarProps) {
+  const [importOpen, setImportOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
@@ -85,6 +119,25 @@ export function SessionSidebar({
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-14 shrink-0 border-b border-sidebar-border">
         <span className="text-xs font-bold uppercase tracking-wider opacity-60">Sessions</span>
+        <div className="flex items-center gap-0.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button aria-label="Export sessions" disabled={sessions.length === 0} className={headerBtn}>
+              <Download size={14} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => downloadSessions(sessions)}>
+              <Download /> Download all (.json)
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => copySessions(sessions)}>
+              <Copy /> Copy all as JSON
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <button onClick={() => setImportOpen(true)} aria-label="Import sessions" className={headerBtn}>
+          <Upload size={14} />
+        </button>
         <button
           onClick={openAdd}
           aria-label="New session"
@@ -93,6 +146,7 @@ export function SessionSidebar({
           <Plus size={14} />
           New
         </button>
+        </div>
       </div>
 
       {/* List */}
@@ -198,6 +252,17 @@ export function SessionSidebar({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      downloadSessions([session]);
+                    }}
+                    aria-label="Export session"
+                    className="hidden group-hover:block p-1 rounded opacity-60 hover:opacity-100 transition-all cursor-pointer"
+                  >
+                    <Download size={12} />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setDeleteTarget(session);
                     }}
                     aria-label="Delete"
@@ -240,6 +305,13 @@ export function SessionSidebar({
           </form>
         </DialogContent>
       </Dialog>
+
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        existing={sessions}
+        onImport={onImport}
+      />
 
       <AlertDialog
         open={!!deleteTarget}

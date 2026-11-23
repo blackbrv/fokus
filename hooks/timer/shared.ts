@@ -1,4 +1,5 @@
 import { format, isThisYear, isToday, isYesterday } from "date-fns";
+import { z } from "zod";
 
 export type TimerMode = "pomodoro" | "short-break" | "long-break";
 
@@ -137,6 +138,102 @@ export function formatTaskTime(ts: number): string {
   if (isToday(d)) return `Today, ${time}`;
   if (isYesterday(d)) return `Yesterday, ${time}`;
   return format(d, isThisYear(d) ? "MMM d, HH:mm" : "MMM d, yyyy, HH:mm");
+}
+
+// ── Export / import ─────────────────────────────────────────────────────────
+
+const statusSchema = z.enum(["todo", "in-progress", "done"]);
+const count = z.number().int().nonnegative();
+
+const sessionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1),
+  settings: z.object({
+    pomodoroMinutes: count.min(1),
+    shortBreakMinutes: count.min(1),
+    longBreakMinutes: count.min(1),
+    longBreakInterval: count.min(1),
+  }),
+  timerState: z.object({
+    mode: z.enum(["pomodoro", "short-break", "long-break"]),
+    remainingSeconds: count,
+    pomodoroCount: count,
+    isRunning: z.boolean(),
+  }),
+  tasks: z.array(
+    z.object({
+      id: z.string().min(1),
+      title: z.string(),
+      note: z.string().default(""),
+      status: statusSchema,
+      createdAt: z.number().optional(),
+      history: z
+        .array(
+          z.discriminatedUnion("type", [
+            z.object({ at: z.number(), type: z.literal("created") }),
+            z.object({ at: z.number(), type: z.literal("renamed"), from: z.string(), to: z.string() }),
+            z.object({ at: z.number(), type: z.literal("note"), change: z.enum(["added", "edited", "removed"]) }),
+            z.object({ at: z.number(), type: z.literal("status"), from: statusSchema, to: statusSchema }),
+          ]),
+        )
+        .optional(),
+    }),
+  ),
+});
+
+const exportSchema = z.union([
+  z.object({
+    app: z.literal("fokus"),
+    version: z.literal(1),
+    exportedAt: z.number(),
+    sessions: z.array(sessionSchema).min(1),
+  }),
+  // Also accept a raw "fokus-sessions" localStorage value.
+  z.array(sessionSchema).min(1),
+]);
+
+export const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+
+export function buildExport(sessions: Session[]) {
+  const label =
+    sessions.length === 1
+      ? sessions[0].name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "session"
+      : "all";
+  return {
+    filename: `fokus-${label}-${format(new Date(), "yyyy-MM-dd")}.json`,
+    json: JSON.stringify({ app: "fokus", version: 1, exportedAt: Date.now(), sessions }, null, 2),
+  };
+}
+
+/** Parses an export file. Throws an Error with a user-facing message. */
+export function parseImport(text: string): Session[] {
+  if (text.length > MAX_IMPORT_BYTES) throw new Error("File is too large (max 2 MB).");
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw new Error("That isn't valid JSON.");
+  }
+  const result = exportSchema.safeParse(raw);
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    const where = issue.path.length ? ` at ${issue.path.join(".")}` : "";
+    throw new Error(`Not a Fokus export: ${issue.message}${where}.`);
+  }
+  const sessions = Array.isArray(result.data) ? result.data : result.data.sessions;
+  // Last one wins on duplicate ids; never import a running timer.
+  const unique = new Map(sessions.map((s) => [s.id, s]));
+  return [...unique.values()].map((s) => ({ ...s, timerState: { ...s.timerState, isRunning: false } }));
+}
+
+/** Sessions with a matching id are replaced in place; new ones are appended. */
+export function mergeSessions(existing: Session[], incoming: Session[]): Session[] {
+  const byId = new Map(incoming.map((s) => [s.id, s]));
+  const existingIds = new Set(existing.map((s) => s.id));
+  return [
+    ...existing.map((s) => byId.get(s.id) ?? s),
+    ...incoming.filter((s) => !existingIds.has(s.id)),
+  ];
 }
 
 export function fmt(seconds: number): string {

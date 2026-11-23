@@ -15,6 +15,7 @@ import {
   DEFAULT_SESSION_SETTINGS,
   DEFAULT_TIMER_STATE,
   loadSettings,
+  mergeSessions,
   trackTaskChanges,
 } from "./shared";
 
@@ -221,6 +222,15 @@ export function useSessions() {
     [],
   );
 
+  /** Restores sessions as-is (history untouched): same id replaces, new ids append. */
+  const importSessions = useCallback((incoming: Session[]) => {
+    setSessions((prev) => {
+      const next = mergeSessions(prev, incoming);
+      localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const stopAllTimers = useCallback(() => {
     setSessions((prev) => {
       const next = prev.map((s) => ({
@@ -244,6 +254,7 @@ export function useSessions() {
     updateSessionSettings,
     updateSessionTasks,
     updateSessionTimerState,
+    importSessions,
     stopAllTimers,
   };
 }
