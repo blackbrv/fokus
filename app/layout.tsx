@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AosProvider } from "@/components/aos-provider";
 import { AuthProvider } from "@/hooks/use-auth";
+import { CloudLinkDialog } from "@/components/session/CloudLinkDialog";
 import "./globals.css";
 import Navbar from "@/components/compiled-ui/Navbar";
 import Footer from "@/components/compiled-ui/Footer";
@@ -98,6 +99,7 @@ export default function RootLayout({
                 <Navbar />
                 {children}
                 <Footer />
+                <CloudLinkDialog />
               </AosProvider>
             </TooltipProvider>
           </AuthProvider>
