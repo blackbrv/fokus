@@ -1,15 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Pencil, Trash2, X } from "lucide-react";
+import Link from "next/link";
+import { Link2, Maximize2, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { StatusDot, STATUS_META } from "./BoardTaskCardContent";
+import { copyTaskLink, StatusDot, STATUS_META } from "./BoardTaskCardContent";
 import {
   formatTaskTime,
   type Task,
   type TaskEvent,
   type TaskStatus,
+  taskLink,
 } from "@/hooks/timer/shared";
 
 function StatusLabel({ status }: { status: TaskStatus }) {
@@ -65,13 +67,32 @@ export function TaskDetail({
         <span>
           In <span className="font-semibold text-foreground">{sessionName}</span>
         </span>
-        <button
-          onClick={onClose}
-          aria-label="Close details"
-          className="rounded-md p-1 hover:bg-muted hover:text-foreground cursor-pointer"
-        >
-          <X size={14} />
-        </button>
+        <div className="flex gap-0.5">
+          <button
+            onClick={() => copyTaskLink(task, sessionName)}
+            aria-label="Copy task link"
+            title="Copy task link"
+            className="rounded-md p-1 hover:bg-muted hover:text-foreground cursor-pointer"
+          >
+            <Link2 size={14} />
+          </button>
+          <Link
+            href={taskLink(task, sessionName)}
+            target="_blank"
+            aria-label="Open full screen"
+            title="Open full screen"
+            className="rounded-md p-1 hover:bg-muted hover:text-foreground"
+          >
+            <Maximize2 size={14} />
+          </Link>
+          <button
+            onClick={onClose}
+            aria-label="Close details"
+            className="rounded-md p-1 hover:bg-muted hover:text-foreground cursor-pointer"
+          >
+            <X size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Keyed by task so the content cross-fades when another card is picked. */}

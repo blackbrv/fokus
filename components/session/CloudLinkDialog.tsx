@@ -19,42 +19,53 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const linkedKey = (uid: string) => `fokus-linked-${uid}`;
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+export const linkedKey = (uid: string) => `fokus-linked-${uid}`;
+export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /**
- * Runs once per account per device, on first sign-in: an empty account gets
- * this device's sessions automatically; otherwise the user is asked.
+ * This device's guest sessions, if there's anything worth offering to an
+ * account ([] otherwise). Ids already in the account become copies so an
+ * import never overwrites synced data.
+ */
+export function deviceSessions(cloudIds: Set<string>): Session[] {
+  const local = loadSessions();
+  if (local.length <= 1 && !local.some((s) => s.tasks.length > 0)) return [];
+  return local.map((s) =>
+    cloudIds.has(s.id) ? { ...s, id: crypto.randomUUID(), name: `${s.name} (this device)` } : s,
+  );
+}
+
+// /register sets this before signing up: a new account's import offer is on
+// /welcome instead. Consumed by the sign-in it precedes.
+let skipNext = false;
+export const skipNextLinkPrompt = (skip = true) => {
+  skipNext = skip;
+};
+
+/**
+ * Runs once per account per device, on sign-in: accounts never pick up guest
+ * data on their own; if this device has some, the user is asked to import it.
  */
 export function CloudLinkDialog() {
   const { user } = useAuth();
   const [pending, setPending] = useState<{ uid: string; local: Session[] } | null>(null);
 
   useEffect(() => {
-    if (!user || localStorage.getItem(linkedKey(user.uid))) return;
+    if (!user) return;
+    if (skipNext) {
+      skipNext = false;
+      return;
+    }
+    if (localStorage.getItem(linkedKey(user.uid))) return;
     const uid = user.uid;
     let cancelled = false;
     (async () => {
-      const local = loadSessions();
-      // From the server: an empty offline cache must not look like an empty account.
+      // From the server, so clashing ids are known even on a cold cache.
       const cloud = await getDocsFromServer(sessionsCol(uid));
       if (cancelled) return;
-      if (cloud.empty) {
-        await syncToCloud(uid, [], local);
-        localStorage.setItem(linkedKey(uid), "1");
-      } else if (local.length > 1 || local.some((s) => s.tasks.length > 0)) {
-        // This device's guest copy can share ids with (older versions of)
-        // synced sessions; import those as copies so nothing is overwritten.
-        const cloudIds = new Set(cloud.docs.map((d) => d.id));
-        setPending({
-          uid,
-          local: local.map((s) =>
-            cloudIds.has(s.id) ? { ...s, id: crypto.randomUUID(), name: `${s.name} (this device)` } : s,
-          ),
-        });
-      } else {
-        localStorage.setItem(linkedKey(uid), "1");
-      }
+      const local = deviceSessions(new Set(cloud.docs.map((d) => d.id)));
+      if (local.length) setPending({ uid, local });
+      else localStorage.setItem(linkedKey(uid), "1");
     })().catch(() => {
       /* Offline or transient: try again on the next load. */
     });

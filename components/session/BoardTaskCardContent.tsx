@@ -1,13 +1,14 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Clock, Link2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatTaskTime, type Task, type TaskStatus } from "@/hooks/timer/shared";
+import { formatTaskTime, STATUS_LABEL, taskLink, type Task, type TaskStatus } from "@/hooks/timer/shared";
 
 export const STATUS_META: Record<TaskStatus, { label: string; dot: string }> = {
-  todo: { label: "To Do", dot: "bg-muted-foreground" },
-  "in-progress": { label: "In Progress", dot: "bg-chart-1" },
-  done: { label: "Done", dot: "bg-chart-2" },
+  todo: { label: STATUS_LABEL.todo, dot: "bg-muted-foreground" },
+  "in-progress": { label: STATUS_LABEL["in-progress"], dot: "bg-chart-1" },
+  done: { label: STATUS_LABEL.done, dot: "bg-chart-2" },
 };
 
 export function StatusDot({ status, className }: { status: TaskStatus; className?: string }) {
@@ -43,4 +44,14 @@ export function BoardTaskCardContent({ task }: { task: Task }) {
       </div>
     </div>
   );
+}
+
+/** Copies an absolute share link for the task (anyone can open it; no account needed). */
+export async function copyTaskLink(task: Task, sessionName: string) {
+  try {
+    await navigator.clipboard.writeText(location.origin + taskLink(task, sessionName));
+    toast.success("Task link copied", { icon: <Link2 className="size-4" /> });
+  } catch {
+    toast.error("Couldn't copy the link.");
+  }
 }

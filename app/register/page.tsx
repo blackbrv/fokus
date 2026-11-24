@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { skipNextLinkPrompt } from "@/components/session/CloudLinkDialog";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
@@ -58,16 +60,24 @@ export default function RegisterPage() {
     defaultValues: { displayName: "", username: "", email: "", password: "", confirm: "" },
   });
 
+  // Already signed in → /tasks. Skipped while signing up: auth flips mid-submit,
+  // and a fresh account goes to /welcome instead.
+  const [signedUp, setSignedUp] = useState(false);
+  const submitting = form.formState.isSubmitting;
   useEffect(() => {
-    if (!loading && user) router.replace("/tasks");
-  }, [user, loading, router]);
+    if (!loading && user && !submitting && !signedUp) router.replace("/tasks");
+  }, [user, loading, submitting, signedUp, router]);
 
   const onSubmit = form.handleSubmit(async ({ email, password, displayName, username }) => {
     setError(null);
+    skipNextLinkPrompt();
     try {
       await signUp(email, password, displayName, username);
+      setSignedUp(true);
+      router.replace("/welcome");
       toast.success("Account created", { icon: <UserPlus className="size-4" /> });
     } catch (e) {
+      skipNextLinkPrompt(false);
       const message = authErrorMessage(e);
       if (message.includes("username")) form.setError("username", { message });
       else setError(message);
@@ -110,15 +120,19 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>{f.label}</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          type={f.type}
-                          autoComplete={f.autoComplete}
-                          placeholder={f.placeholder}
-                          onChange={(e) =>
-                            field.onChange(f.name === "username" ? e.target.value.toLowerCase() : e.target.value)
-                          }
-                        />
+                        {f.type === "password" ? (
+                          <PasswordInput {...field} autoComplete={f.autoComplete} placeholder={f.placeholder} />
+                        ) : (
+                          <Input
+                            {...field}
+                            type={f.type}
+                            autoComplete={f.autoComplete}
+                            placeholder={f.placeholder}
+                            onChange={(e) =>
+                              field.onChange(f.name === "username" ? e.target.value.toLowerCase() : e.target.value)
+                            }
+                          />
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>

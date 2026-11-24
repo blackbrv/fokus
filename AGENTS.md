@@ -18,7 +18,7 @@ Pomodoro timer app — fully client-side. Optional accounts via Firebase (client
 - **Tailwind v4** — use `@import "tailwindcss"`, not `@tailwind` directives. PostCSS plugin: `@tailwindcss/postcss`. CSS variables in `app/globals.css`. Also imports `tw-animate-css` for animation utilities.
 - **zod v4** — API differs from v3 (`z.email()` not `z.string().email()`, `z.infer<T>` alias for `z.output<T>`).
 - **No `src/` dir** — `@/*` maps to project root, e.g. `@/hooks/timer/use-timer`.
-- All pages are `"use client"` — no server components, no API routes, no server actions, no Cloud Functions (must stay on the free Spark plan).
+- All pages are `"use client"` (except `/task`, server-rendered so shared links have real HTML) — no other server components, no API routes, no server actions, no Cloud Functions (must stay on the free Spark plan).
 - **Recharts** (`^3.8.0`) — charts on `/reports` (PieChart, BarChart).
 - **Lucide React** — icon library used throughout (import from `lucide-react`).
 - **Two DnD libraries**: `@dnd-kit` (sortable list on `/timer`) and `@hello-pangea/dnd` (kanban board on `/tasks`).
@@ -38,12 +38,15 @@ Pomodoro timer app — fully client-side. Optional accounts via Firebase (client
 - **Theme**: next-themes with `class` strategy (light/dark). `<ThemeProvider>` wraps root layout.
 - **Color themes**: `lib/themes.ts` (tokens, presets with light+dark palettes) + `hooks/use-themes.ts` (store). Custom themes in `"fokus-custom-themes"`, active id in `"fokus-active-theme"`, compiled CSS in `"fokus-theme-css"` (applied pre-paint by a `beforeInteractive` script in root layout). Editor: `components/theme/ThemeDialog.tsx` (navbar palette button); browser: `/themes`.
 - **Auth**: `lib/firebase.ts` (app/auth/db init from `NEXT_PUBLIC_FIREBASE_*` in `.env.local`) + `hooks/use-auth.tsx` (`<AuthProvider>` in root layout, `useAuth()` → `{ user, profile, loading }`, plus `signUp`/`signIn`/`signOut`/`resetPassword`/`saveProfile`). Firestore: `users/{uid}` `{ displayName, username, createdAt }`, `usernames/{name}` `{ uid }` for uniqueness — claimed/released in one transaction. Security rules live in `firestore.rules` (paste into console to deploy); keep its username regex in sync with `usernameSchema`. Pages: `/login`, `/register`, `/account`; navbar `AccountButton`.
-- **First sign-in per device**: `components/session/CloudLinkDialog.tsx` (mounted in layout) — empty account gets this device's sessions automatically; otherwise asks, importing id clashes as copies. Flag `"fokus-linked-<uid>"`.
+- **Guest data never auto-copies into an account.** A server-empty account is seeded with one blank session (in `use-sessions`). Importing this device's guest sessions is explicit: `/welcome` offers it right after sign-up; `components/session/CloudLinkDialog.tsx` (mounted in layout) asks on later sign-ins (`/register` calls `skipNextLinkPrompt()`). Id clashes import as copies (`deviceSessions()`). Flag `"fokus-linked-<uid>"` = offered on this device.
+- **Onboarding**: `/register` → `/welcome` (4-step guide + import offer); also linked from the account menu ("Getting started").
+- **Task share links**: `taskLink()` / `parseTaskLink()` in `shared.ts` put the task in plain query params (`/task?title=…&status=…&note=…&session=…&created=…`). `/task` renders it server-side with metadata + a JSON block (`#fokus-task`, `type: "fokus.task"`). A snapshot: no DB, works for anyone. Copy from board cards / `TaskDetail` (`copyTaskLink`).
+- **Password fields**: use `components/ui/password-input.tsx` (show/hide toggle).
 - **Export / import**: `buildExport` / `parseImport` (zod-validated) / `mergeSessions` in `shared.ts`; `ImportDialog` + export buttons in `SessionSidebar`; `importSessions()` in `use-sessions` (same id replaces, new ids append, history preserved).
 - **Class merging**: `cn()` from `@/lib/utils` (clsx + tailwind-merge).
 
 ## Routes
-`/` `/timer` `/tasks` `/themes` `/settings` `/reports` `/reports/[id]` `/login` `/register` `/account`
+`/` `/timer` `/tasks` `/themes` `/settings` `/reports` `/reports/[id]` `/login` `/register` `/account` `/welcome` `/task`
 
 ## Settings
 Persisted to `localStorage` under `"fokus-settings"` — stores `{ pomodoro, shortBreak, longBreak, sessionsBeforeLongBreak, autoStart }` in minutes.

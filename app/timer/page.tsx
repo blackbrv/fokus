@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 import { useSessions } from "@/hooks/timer/use-sessions";
 import { useTimer } from "@/hooks/timer/use-timer";
 import { useNotification } from "@/hooks/use-notification";
@@ -42,6 +43,7 @@ export default function TimerPage() {
     updateSessionTasks,
     updateSessionTimerState,
     stopAllTimers,
+    isLoaded,
   } = useSessions();
 
   const { notify, requestPermission } = useNotification();
@@ -174,6 +176,14 @@ export default function TimerPage() {
   };
 
   const activeTask = activeSession?.tasks.find((t) => t.status !== "done") ?? null;
+
+  if (!isLoaded) {
+    return (
+      <div className="flex flex-1 items-center justify-center min-h-screen">
+        <Spinner className="size-6 text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!activeSession) {
     return (

@@ -241,3 +241,67 @@ export function fmt(seconds: number): string {
   const s = seconds % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
+
+// ── Shareable task links ────────────────────────────────────────────────────
+// The task travels in plain query params (/task?title=…&status=…&note=…), so
+// the link works for anyone without an account or database, and the URL itself
+// is readable by people and AI agents. It's a snapshot, not a live view.
+
+export const STATUS_LABEL: Record<TaskStatus, string> = {
+  todo: "To Do",
+  "in-progress": "In Progress",
+  done: "Done",
+};
+
+// ponytail: plain-char cap keeps typical links well under URL limits (~8 KB);
+// very long non-Latin notes can still exceed it. Store shares in Firestore if that bites.
+const MAX_LINK_NOTE = 4000;
+
+export function taskLink(task: Task, sessionName: string): string {
+  const p = new URLSearchParams({ title: task.title, status: task.status, session: sessionName });
+  if (task.note) p.set("note", task.note.slice(0, MAX_LINK_NOTE));
+  if (task.note.length > MAX_LINK_NOTE) p.set("truncated", "1");
+  if (task.createdAt) p.set("created", new Date(task.createdAt).toISOString());
+  return `/task?${p}`;
+}
+
+const one = z.preprocess((v) => (Array.isArray(v) ? v[0] : v), z.string().optional());
+const taskLinkSchema = z.object({
+  title: z.preprocess((v) => (Array.isArray(v) ? v[0] : v), z.string().trim().min(1)),
+  status: z.preprocess((v) => (Array.isArray(v) ? v[0] : v), z.enum(["todo", "in-progress", "done"]).catch("todo")),
+  note: one,
+  session: one,
+  created: one.pipe(z.iso.datetime().optional()).catch(undefined),
+  truncated: one,
+});
+
+/** The payload an AI agent (or anyone) gets from a task link. */
+export type SharedTask = {
+  type: "fokus.task";
+  version: 1;
+  title: string;
+  status: TaskStatus;
+  statusLabel: string;
+  description: string;
+  descriptionTruncated: boolean;
+  session: string | null;
+  createdAt: string | null;
+};
+
+/** Parses /task search params; null when the link has no usable title. */
+export function parseTaskLink(params: Record<string, string | string[] | undefined>): SharedTask | null {
+  const r = taskLinkSchema.safeParse(params);
+  if (!r.success) return null;
+  const d = r.data;
+  return {
+    type: "fokus.task",
+    version: 1,
+    title: d.title,
+    status: d.status,
+    statusLabel: STATUS_LABEL[d.status],
+    description: d.note ?? "",
+    descriptionTruncated: d.truncated === "1",
+    session: d.session || null,
+    createdAt: d.created ?? null,
+  };
+}

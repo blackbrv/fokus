@@ -89,6 +89,14 @@ export function loadSessions(): Session[] {
   return sessions;
 }
 
+const blankSession = (): Session => ({
+  id: crypto.randomUUID(),
+  name: "My Session",
+  settings: { ...DEFAULT_SESSION_SETTINGS },
+  timerState: { ...DEFAULT_TIMER_STATE },
+  tasks: [],
+});
+
 function loadActiveSessionId(sessions: Session[]): string {
   if (typeof window === "undefined") return sessions[0]?.id ?? "";
   try {
@@ -147,8 +155,13 @@ export function useSessions() {
       sessionsCol(uid),
       { includeMetadataChanges: true },
       (snap) => {
-        // An empty local cache isn't an answer yet; wait for the server.
-        if (snap.empty && snap.metadata.fromCache) return;
+        if (snap.empty) {
+          // An empty local cache isn't an answer yet; wait for the server.
+          // Server says empty (new account): start with one blank session.
+          // Guest data is never copied in; that's an explicit import.
+          if (!snap.metadata.fromCache) commit([], [blankSession()]);
+          return;
+        }
         const s = fromSnapshot(snap);
         setSessions(s);
         setActiveSessionIdState((cur) => (s.some((x) => x.id === cur) ? cur : loadActiveSessionId(s)));
@@ -159,7 +172,7 @@ export function useSessions() {
         setIsLoaded(true);
       },
     );
-  }, [uid, authLoading]);
+  }, [uid, authLoading, commit]);
 
   const setActiveSessionId = useCallback((id: string) => {
     setActiveSessionIdState(id);
@@ -203,13 +216,7 @@ export function useSessions() {
       setSessions((prev) => {
         const remaining = prev.filter((s) => s.id !== id);
         if (remaining.length === 0) {
-          const fresh: Session = {
-            id: crypto.randomUUID(),
-            name: "My Session",
-            settings: { ...DEFAULT_SESSION_SETTINGS },
-            timerState: { ...DEFAULT_TIMER_STATE },
-            tasks: [],
-          };
+          const fresh = blankSession();
           setActiveSessionId(fresh.id);
           return commit(prev, [fresh]);
         }
