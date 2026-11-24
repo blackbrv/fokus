@@ -11,7 +11,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "../ui/navigation-menu";
-import { Clock, Settings, BarChart3, Palette, UserRound, LogOut } from "lucide-react";
+import { Clock, Settings, BarChart3, Palette, UserRound, LogOut, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeDialog } from "@/components/theme/ThemeDialog";
 import {
@@ -81,6 +81,11 @@ function AccountButton() {
         <DropdownMenuItem asChild className="focus:bg-background/10 focus:text-background [&_svg]:text-background/50">
           <Link href="/account">
             <UserRound /> Account
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="focus:bg-background/10 focus:text-background [&_svg]:text-background/50">
+          <Link href="/welcome">
+            <BookOpen /> Getting started
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem
