@@ -13,6 +13,7 @@ import { TaskDialog } from "@/components/timer/task-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Spinner } from "@/components/ui/spinner";
 import type { Task, TaskStatus } from "@/hooks/timer/shared";
 
 const COLUMN_ORDER: TaskStatus[] = ["todo", "in-progress", "done"];
@@ -29,6 +30,7 @@ export default function TasksPage() {
     deleteSession,
     updateSessionTasks,
     importSessions,
+    isLoaded,
   } = useSessions();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -136,6 +138,14 @@ export default function TasksPage() {
     setActiveSessionId(sessionId);
     router.push("/timer");
   };
+
+  if (!isLoaded) {
+    return (
+      <div className="flex flex-1 items-center justify-center min-h-screen">
+        <Spinner className="size-6 text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!activeSession) {
     return (
