@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
@@ -110,15 +111,19 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>{f.label}</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          type={f.type}
-                          autoComplete={f.autoComplete}
-                          placeholder={f.placeholder}
-                          onChange={(e) =>
-                            field.onChange(f.name === "username" ? e.target.value.toLowerCase() : e.target.value)
-                          }
-                        />
+                        {f.type === "password" ? (
+                          <PasswordInput {...field} autoComplete={f.autoComplete} placeholder={f.placeholder} />
+                        ) : (
+                          <Input
+                            {...field}
+                            type={f.type}
+                            autoComplete={f.autoComplete}
+                            placeholder={f.placeholder}
+                            onChange={(e) =>
+                              field.onChange(f.name === "username" ? e.target.value.toLowerCase() : e.target.value)
+                            }
+                          />
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { LogIn, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
@@ -122,7 +123,7 @@ export default function LoginPage() {
                       </button>
                     </div>
                     <FormControl>
-                      <Input {...field} type="password" autoComplete="current-password" placeholder="••••••••" />
+                      <PasswordInput {...field} autoComplete="current-password" placeholder="••••••••" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
