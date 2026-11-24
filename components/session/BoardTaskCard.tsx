@@ -1,7 +1,7 @@
 "use client";
 
 import { Draggable } from "@hello-pangea/dnd";
-import { Pencil, Trash2 } from "lucide-react";
+import { Link2, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BoardTaskCardContent } from "./BoardTaskCardContent";
 import type { Task } from "@/hooks/timer/shared";
@@ -15,6 +15,7 @@ interface BoardTaskCardProps {
   animateIn: boolean;
   onSelect: (task: Task) => void;
   onEdit: (task: Task) => void;
+  onCopyLink: (task: Task) => void;
   onDelete: (id: string) => void;
 }
 
@@ -29,6 +30,7 @@ export function BoardTaskCard({
   animateIn,
   onSelect,
   onEdit,
+  onCopyLink,
   onDelete,
 }: BoardTaskCardProps) {
   return (
@@ -61,6 +63,16 @@ export function BoardTaskCard({
           <BoardTaskCardContent task={task} />
 
           <div className="absolute top-2 right-2 flex gap-0.5 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopyLink(task);
+              }}
+              aria-label="Copy task link"
+              className="rounded-md p-1.5 opacity-60 hover:bg-current/10 hover:opacity-100 cursor-pointer"
+            >
+              <Link2 size={12} />
+            </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();

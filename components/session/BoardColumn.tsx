@@ -16,6 +16,7 @@ interface BoardColumnProps {
   onSelect: (task: Task) => void;
   onOpenAdd: (status: TaskStatus) => void;
   onEdit: (task: Task) => void;
+  onCopyLink: (task: Task) => void;
   onDelete: (id: string) => void;
   aosDelay?: number;
 }
@@ -29,6 +30,7 @@ export function BoardColumn({
   onSelect,
   onOpenAdd,
   onEdit,
+  onCopyLink,
   onDelete,
   aosDelay = 0,
 }: BoardColumnProps) {
@@ -94,6 +96,7 @@ export function BoardColumn({
                 animateIn={task.id !== droppedId}
                 onSelect={onSelect}
                 onEdit={onEdit}
+                onCopyLink={onCopyLink}
                 onDelete={onDelete}
               />
             ))}

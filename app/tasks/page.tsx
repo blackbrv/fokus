@@ -9,6 +9,7 @@ import { useSessions } from "@/hooks/timer/use-sessions";
 import { SessionSidebar } from "@/components/session/SessionSidebar";
 import { BoardColumn } from "@/components/session/BoardColumn";
 import { TaskDetail } from "@/components/session/TaskDetail";
+import { copyTaskLink } from "@/components/session/BoardTaskCardContent";
 import { TaskDialog } from "@/components/timer/task-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -246,6 +247,7 @@ export default function TasksPage() {
                   onSelect={(t) => setSelectedId(t.id)}
                   onOpenAdd={openAdd}
                   onEdit={openEdit}
+                  onCopyLink={(t) => copyTaskLink(t, activeSession.name)}
                   onDelete={deleteTask}
                   aosDelay={100 + i * 100}
                 />
