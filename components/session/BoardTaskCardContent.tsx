@@ -1,9 +1,9 @@
 "use client";
 
-import { Clock, Link2 } from "lucide-react";
+import { Clock, ImageIcon, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatTaskTime, STATUS_LABEL, taskLink, type Task, type TaskStatus, type TaskTag } from "@/hooks/timer/shared";
+import { formatTaskTime, noteImages, STATUS_LABEL, stripImages, taskLink, type Task, type TaskStatus, type TaskTag } from "@/hooks/timer/shared";
 
 export const STATUS_META: Record<TaskStatus, { label: string; dot: string }> = {
   todo: { label: STATUS_LABEL.todo, dot: "bg-muted-foreground" },
@@ -31,6 +31,8 @@ export function TagChips({ tags, className }: { tags?: TaskTag[]; className?: st
 
 // Colors are inherited so the content reads on both plain and selected cards.
 export function BoardTaskCardContent({ task }: { task: Task }) {
+  const text = stripImages(task.note);
+  const images = noteImages(task.note).length;
   return (
     <div className="min-w-0 flex-1">
       <p
@@ -41,11 +43,17 @@ export function BoardTaskCardContent({ task }: { task: Task }) {
       >
         {task.title}
       </p>
-      {task.note && <p className="mt-1 line-clamp-2 text-xs opacity-60">{task.note}</p>}
+      {text && <p className="mt-1 line-clamp-2 text-xs opacity-60">{text}</p>}
       <TagChips tags={task.tags} className="mt-2" />
       <div className="mt-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
         <StatusDot status={task.status} className="size-1.5" />
         {STATUS_META[task.status].label}
+        {images > 0 && (
+          <span title={`${images} image${images > 1 ? "s" : ""}`} className="ml-1.5 flex items-center gap-0.5">
+            <ImageIcon className="size-3" />
+            {images}
+          </span>
+        )}
         {task.createdAt && (
           <time
             dateTime={new Date(task.createdAt).toISOString()}

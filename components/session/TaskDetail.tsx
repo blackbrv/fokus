@@ -6,6 +6,7 @@ import { Link2, Maximize2, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { copyTaskLink, StatusDot, STATUS_META, TagChips } from "./BoardTaskCardContent";
+import { NoteContent } from "./NoteContent";
 import {
   formatTaskTime,
   type Task,
@@ -154,14 +155,11 @@ export function TaskDetail({
           <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Note
           </h3>
-          <p
-            className={cn(
-              "text-sm leading-relaxed whitespace-pre-wrap break-words",
-              !task.note && "text-muted-foreground italic",
-            )}
-          >
-            {task.note || "No note added."}
-          </p>
+          {task.note ? (
+            <NoteContent note={task.note} className="text-sm leading-relaxed" />
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No note added.</p>
+          )}
         </div>
 
         <div>

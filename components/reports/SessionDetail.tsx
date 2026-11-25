@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { Session, TaskStatus } from "@/hooks/timer/shared";
+import { stripImages, type Session, type TaskStatus } from "@/hooks/timer/shared";
 
 const DETAIL_PIE_COLORS = [
   "oklch(0.708 0 0)",
@@ -161,9 +161,9 @@ export function SessionDetail({ session }: { session: Session }) {
                       >
                         {task.title}
                       </span>
-                      {task.note && (
+                      {stripImages(task.note) && (
                         <span className="text-xs text-foreground/45 leading-relaxed">
-                          {task.note}
+                          {stripImages(task.note)}
                         </span>
                       )}
                     </div>
