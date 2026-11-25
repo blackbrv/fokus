@@ -291,6 +291,23 @@ export function fmt(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+// ── Task images ─────────────────────────────────────────────────────────────
+// Images live inside the task note as Markdown: `![alt](src)`. `src` is either
+// `/img/<32 hex id>` (uploaded to Fokus, see lib/task-images.ts) or any https:// URL.
+// So people and AI agents add an image by writing that line into the note.
+
+/** Types the /img route will serve. Never SVG (it can carry scripts). */
+export const IMAGE_TYPES = ["image/webp", "image/jpeg", "image/png", "image/gif"];
+
+export const IMAGE_MD = /!\[([^\]\n]*)\]\((\/img\/[a-f0-9]{32}|https:\/\/[^\s)]+)\)/g;
+
+export const imageMarkdown = (alt: string, src: string) => `![${alt.replace(/[[\]\n]/g, "")}](${src})`;
+
+export const noteImages = (note: string) => [...note.matchAll(IMAGE_MD)].map((m) => ({ alt: m[1], src: m[2] }));
+
+/** The note without image lines, for one-line previews. */
+export const stripImages = (note: string) => note.replace(IMAGE_MD, "").replace(/\n{3,}/g, "\n\n").trim();
+
 // ── Shareable task links ────────────────────────────────────────────────────
 // The task travels in plain query params (/task?title=…&status=…&note=…), so
 // the link works for anyone without an account or database, and the URL itself
@@ -349,10 +366,15 @@ export type SharedTask = {
   createdAt: string | null;
   /** User-defined key/value labels, e.g. [{ key: "priority", value: "high" }]. Always present. */
   tags: TaskTag[];
+  /** Images in the description (`![alt](src)` lines), with absolute URLs. Always present. */
+  images: { alt: string; url: string }[];
 };
 
-/** Parses /task search params; null when the link has no usable title. */
-export function parseTaskLink(params: Record<string, string | string[] | undefined>): SharedTask | null {
+/** Parses /task search params; null when the link has no usable title. `origin` resolves /img/ URLs. */
+export function parseTaskLink(
+  params: Record<string, string | string[] | undefined>,
+  origin = "http://localhost",
+): SharedTask | null {
   const r = taskLinkSchema.safeParse(params);
   if (!r.success) return null;
   const d = r.data;
@@ -367,5 +389,6 @@ export function parseTaskLink(params: Record<string, string | string[] | undefin
     session: d.session || null,
     createdAt: d.created ?? null,
     tags: d.tag,
+    images: noteImages(d.note ?? "").map((i) => ({ alt: i.alt, url: new URL(i.src, origin).href })),
   };
 }

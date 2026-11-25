@@ -32,6 +32,21 @@ service cloud.firestore {
       }
     }
 
+    // Task images (see lib/task-images.ts). Readable by anyone who has the
+    // random id, so shared task links show them; never listable; immutable.
+    match /images/{id} {
+      allow get: if true;
+      allow list, update: if false;
+      allow create: if request.auth != null
+        && id.matches('^[a-f0-9]{32}$')
+        && request.resource.data.keys().hasOnly(['owner', 'type', 'data', 'width', 'height', 'createdAt'])
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.type in ['image/webp', 'image/jpeg', 'image/png', 'image/gif']
+        && request.resource.data.data is bytes
+        && request.resource.data.data.size() <= 950000;
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+    }
+
     match /usernames/{name} {
       allow get: if true;            // availability check, works before sign-up
       allow list, update: if false;  // no enumerating usernames
