@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useId } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -15,31 +15,42 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { tagsSchema } from "@/hooks/timer/shared";
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Task title is required"),
   note: z.string().optional(),
+  tags: tagsSchema,
 });
 
-type TaskFormData = z.infer<typeof taskFormSchema>;
+export type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskDialogProps {
   heading: string;
-  defaultValues?: TaskFormData;
+  defaultValues?: Partial<TaskFormData>;
+  /** Tag keys already used in the session, offered as suggestions. */
+  tagKeys?: string[];
   onSave: (data: TaskFormData) => void;
   onCancel: () => void;
 }
 
+const fieldClass =
+  "bg-foreground/[0.04] border-foreground/15 focus-visible:ring-foreground/20 focus-visible:border-foreground/25";
+
 export function TaskDialog({
   heading,
-  defaultValues = { title: "", note: "" },
+  defaultValues,
+  tagKeys = [],
   onSave,
   onCancel,
 }: TaskDialogProps) {
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
-    defaultValues,
+    defaultValues: { title: "", note: "", tags: [], ...defaultValues },
   });
+  const tags = useFieldArray({ control: form.control, name: "tags" });
+  const keyListId = useId();
+
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -60,7 +71,7 @@ export function TaskDialog({
       />
 
       {/* Card */}
-      <div className="relative z-10 w-full max-w-[700px] bg-background rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-[700px] max-h-[90vh] overflow-y-auto bg-background rounded-2xl shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-5">
           <h2 className="text-2xl font-bold text-foreground">{heading}</h2>
@@ -125,6 +136,61 @@ export function TaskDialog({
                 </FormItem>
               )}
             />
+
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-semibold text-foreground">
+                Tags{" "}
+                <span className="font-normal text-foreground/40">(optional, e.g. priority: high)</span>
+              </span>
+              <datalist id={keyListId}>
+                {tagKeys.map((k) => (
+                  <option key={k} value={k} />
+                ))}
+              </datalist>
+              {tags.fields.map((row, i) => (
+                <div key={row.id} className="flex items-start gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`tags.${i}.key`}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input {...field} list={keyListId} placeholder="Key" aria-label="Tag key" className={fieldClass} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`tags.${i}.value`}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input {...field} placeholder="Value" aria-label="Tag value" className={fieldClass} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => tags.remove(i)}
+                    aria-label="Remove tag"
+                    className="mt-1.5 rounded-md p-1.5 text-foreground/50 hover:bg-foreground/5 hover:text-foreground cursor-pointer"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => tags.append({ key: "", value: "" })}
+                className="flex w-fit items-center gap-1 text-sm font-medium text-foreground/60 hover:text-foreground cursor-pointer"
+              >
+                <Plus size={14} /> Add tag
+              </button>
+            </div>
 
             {/* Actions */}
             <div className="flex gap-3 pt-1">

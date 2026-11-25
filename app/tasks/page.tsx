@@ -10,12 +10,12 @@ import { SessionSidebar } from "@/components/session/SessionSidebar";
 import { BoardColumn } from "@/components/session/BoardColumn";
 import { TaskDetail } from "@/components/session/TaskDetail";
 import { copyTaskLink } from "@/components/session/BoardTaskCardContent";
-import { TaskDialog } from "@/components/timer/task-dialog";
+import { TaskDialog, type TaskFormData } from "@/components/timer/task-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
-import type { Task, TaskStatus } from "@/hooks/timer/shared";
+import { tagKeys, type Task, type TaskStatus } from "@/hooks/timer/shared";
 
 const COLUMN_ORDER: TaskStatus[] = ["todo", "in-progress", "done"];
 
@@ -84,12 +84,13 @@ export default function TasksPage() {
     setAddOpen(true);
   };
 
-  const handleAddSave = (data: { title: string; note?: string }) => {
+  const handleAddSave = (data: TaskFormData) => {
     if (!activeSession) return;
     const newTask: Task = {
       id: crypto.randomUUID(),
       title: data.title.trim(),
       note: (data.note ?? "").trim(),
+      tags: data.tags,
       status: addTargetStatus,
     };
     updateSessionTasks(activeSession.id, [...activeSession.tasks, newTask]);
@@ -102,13 +103,13 @@ export default function TasksPage() {
     setEditOpen(true);
   };
 
-  const handleEditSave = (data: { title: string; note?: string }) => {
+  const handleEditSave = (data: TaskFormData) => {
     if (!activeSession || !editingTask) return;
     updateSessionTasks(
       activeSession.id,
       activeSession.tasks.map((t) =>
         t.id === editingTask.id
-          ? { ...t, title: data.title.trim(), note: (data.note ?? "").trim() }
+          ? { ...t, title: data.title.trim(), note: (data.note ?? "").trim(), tags: data.tags }
           : t,
       ),
     );
@@ -163,7 +164,9 @@ export default function TasksPage() {
   const selectedTask = tasks.find((t) => t.id === selectedId) ?? null;
   const q = query.trim().toLowerCase();
   const visible = q
-    ? tasks.filter((t) => `${t.title} ${t.note}`.toLowerCase().includes(q))
+    ? tasks.filter((t) =>
+        [t.title, t.note, ...(t.tags ?? []).map((g) => `${g.key}: ${g.value}`)].join(" ").toLowerCase().includes(q),
+      )
     : tasks;
 
   return (
@@ -271,6 +274,7 @@ export default function TasksPage() {
       {addOpen && (
         <TaskDialog
           heading="Add Task"
+          tagKeys={tagKeys(tasks)}
           onSave={handleAddSave}
           onCancel={() => setAddOpen(false)}
         />
@@ -279,7 +283,8 @@ export default function TasksPage() {
       {editOpen && editingTask && (
         <TaskDialog
           heading="Edit Task"
-          defaultValues={{ title: editingTask.title, note: editingTask.note }}
+          tagKeys={tagKeys(tasks)}
+          defaultValues={{ title: editingTask.title, note: editingTask.note, tags: editingTask.tags ?? [] }}
           onSave={handleEditSave}
           onCancel={() => { setEditingTask(null); setEditOpen(false); }}
         />

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StatusDot } from "@/components/session/BoardTaskCardContent";
+import { StatusDot, TagChips } from "@/components/session/BoardTaskCardContent";
 import { parseTaskLink } from "@/hooks/timer/shared";
 import { CopyButton } from "./CopyButton";
 
@@ -52,6 +52,7 @@ export default async function TaskPage({ searchParams }: Props) {
               <time dateTime={task.createdAt}>Created {format(new Date(task.createdAt), "MMM d, yyyy")}</time>
             )}
           </div>
+          <TagChips tags={task.tags} className="text-foreground [&>li]:text-xs [&>li]:px-2 [&>li]:py-1" />
         </header>
 
         <section

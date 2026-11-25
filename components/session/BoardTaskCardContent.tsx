@@ -3,7 +3,7 @@
 import { Clock, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatTaskTime, STATUS_LABEL, taskLink, type Task, type TaskStatus } from "@/hooks/timer/shared";
+import { formatTaskTime, STATUS_LABEL, taskLink, type Task, type TaskStatus, type TaskTag } from "@/hooks/timer/shared";
 
 export const STATUS_META: Record<TaskStatus, { label: string; dot: string }> = {
   todo: { label: STATUS_LABEL.todo, dot: "bg-muted-foreground" },
@@ -13,6 +13,20 @@ export const STATUS_META: Record<TaskStatus, { label: string; dot: string }> = {
 
 export function StatusDot({ status, className }: { status: TaskStatus; className?: string }) {
   return <span className={cn("size-2 shrink-0 rounded-full", STATUS_META[status].dot, className)} />;
+}
+
+/** `key: value` chips for a task's user-defined tags. */
+export function TagChips({ tags, className }: { tags?: TaskTag[]; className?: string }) {
+  if (!tags?.length) return null;
+  return (
+    <ul className={cn("flex flex-wrap gap-1", className)} aria-label="Tags">
+      {tags.map((t) => (
+        <li key={t.key} className="max-w-full truncate rounded-md border border-current/20 px-1.5 py-0.5 text-[11px] leading-none">
+          <span className="opacity-60">{t.key}:</span> <span className="font-semibold">{t.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 // Colors are inherited so the content reads on both plain and selected cards.
@@ -28,6 +42,7 @@ export function BoardTaskCardContent({ task }: { task: Task }) {
         {task.title}
       </p>
       {task.note && <p className="mt-1 line-clamp-2 text-xs opacity-60">{task.note}</p>}
+      <TagChips tags={task.tags} className="mt-2" />
       <div className="mt-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
         <StatusDot status={task.status} className="size-1.5" />
         {STATUS_META[task.status].label}

@@ -24,9 +24,9 @@ import { useSessions } from "@/hooks/timer/use-sessions";
 import { useTimer } from "@/hooks/timer/use-timer";
 import { useNotification } from "@/hooks/use-notification";
 import { useAudio } from "@/hooks/use-audio";
-import { TaskDialog } from "@/components/timer/task-dialog";
+import { TaskDialog, type TaskFormData } from "@/components/timer/task-dialog";
 import { SortableTaskItem } from "@/components/timer/sortable-task-item";
-import { MODES, MODE_LABELS, fmt, type TimerMode } from "@/hooks/timer/shared";
+import { MODES, MODE_LABELS, fmt, tagKeys, type TimerMode } from "@/hooks/timer/shared";
 import type { Task } from "@/hooks/timer/shared";
 
 const MODE_NOTIFICATIONS: Record<TimerMode, { title: string; body: string }> = {
@@ -119,12 +119,13 @@ export default function TimerPage() {
 
   const openAdd = () => setAddOpen(true);
   const closeAdd = () => setAddOpen(false);
-  const handleAddSave = (data: { title: string; note?: string }) => {
+  const handleAddSave = (data: TaskFormData) => {
     if (!activeSession) return;
     const newTask: Task = {
       id: crypto.randomUUID(),
       title: data.title.trim(),
       note: (data.note ?? "").trim(),
+      tags: data.tags,
       status: "todo",
     };
     updateSessionTasks(activeSession.id, [...activeSession.tasks, newTask]);
@@ -140,13 +141,13 @@ export default function TimerPage() {
     setEditingTask(null);
     setEditOpen(false);
   };
-  const handleEditSave = (data: { title: string; note?: string }) => {
+  const handleEditSave = (data: TaskFormData) => {
     if (!activeSession || !editingTask) return;
     updateSessionTasks(
       activeSession.id,
       activeSession.tasks.map((t) =>
         t.id === editingTask.id
-          ? { ...t, title: data.title.trim(), note: (data.note ?? "").trim() }
+          ? { ...t, title: data.title.trim(), note: (data.note ?? "").trim(), tags: data.tags }
           : t,
       ),
     );
@@ -388,6 +389,7 @@ export default function TimerPage() {
       {addOpen && (
         <TaskDialog
           heading="Add Task"
+          tagKeys={tagKeys(activeSession?.tasks ?? [])}
           onSave={handleAddSave}
           onCancel={closeAdd}
         />
@@ -396,7 +398,8 @@ export default function TimerPage() {
       {editOpen && editingTask && (
         <TaskDialog
           heading="Edit Task"
-          defaultValues={{ title: editingTask.title, note: editingTask.note }}
+          tagKeys={tagKeys(activeSession?.tasks ?? [])}
+          defaultValues={{ title: editingTask.title, note: editingTask.note, tags: editingTask.tags ?? [] }}
           onSave={handleEditSave}
           onCancel={closeEdit}
         />
