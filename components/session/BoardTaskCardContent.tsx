@@ -3,7 +3,7 @@
 import { Clock, ImageIcon, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatTaskTime, noteImages, STATUS_LABEL, stripImages, taskLink, type Task, type TaskStatus, type TaskTag } from "@/hooks/timer/shared";
+import { formatTaskTime, noteImages, STATUS_LABEL, stripImages, taskLink, type TagColor, type Task, type TaskStatus, type TaskTag } from "@/hooks/timer/shared";
 
 export const STATUS_META: Record<TaskStatus, { label: string; dot: string }> = {
   todo: { label: STATUS_LABEL.todo, dot: "bg-muted-foreground" },
@@ -15,14 +15,33 @@ export function StatusDot({ status, className }: { status: TaskStatus; className
   return <span className={cn("size-2 shrink-0 rounded-full", STATUS_META[status].dot, className)} />;
 }
 
+/** Chip tint per tag color; literal classes so Tailwind keeps them. */
+export const TAG_COLOR_CLASS: Record<TagColor, string> = {
+  // Solid fills so chips read on light, dark and selected (inverted) cards alike.
+  red: "border-transparent bg-red-500 text-white",
+  orange: "border-transparent bg-orange-500 text-white",
+  yellow: "border-transparent bg-yellow-400 text-yellow-950",
+  green: "border-transparent bg-green-600 text-white",
+  blue: "border-transparent bg-blue-500 text-white",
+  purple: "border-transparent bg-purple-500 text-white",
+  pink: "border-transparent bg-pink-500 text-white",
+  gray: "border-transparent bg-zinc-500 text-white",
+};
+
 /** `key: value` chips for a task's user-defined tags. */
 export function TagChips({ tags, className }: { tags?: TaskTag[]; className?: string }) {
   if (!tags?.length) return null;
   return (
     <ul className={cn("flex flex-wrap gap-1", className)} aria-label="Tags">
       {tags.map((t) => (
-        <li key={t.key} className="max-w-full truncate rounded-md border border-current/20 px-1.5 py-0.5 text-[11px] leading-none">
-          <span className="opacity-60">{t.key}:</span> <span className="font-semibold">{t.value}</span>
+        <li
+          key={t.key}
+          className={cn(
+            "max-w-full truncate rounded-md border border-current/20 px-1.5 py-0.5 text-[11px] leading-none",
+            t.color && TAG_COLOR_CLASS[t.color],
+          )}
+        >
+          <span className="opacity-70">{t.key}:</span> <span className="font-semibold">{t.value}</span>
         </li>
       ))}
     </ul>

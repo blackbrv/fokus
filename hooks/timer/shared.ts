@@ -17,7 +17,11 @@ export type TaskEvent =
  * { key: "priority", value: "high" } or { key: "client", value: "Acme" }.
  * Keys are unique per task (case-insensitive); there is no fixed list of keys.
  */
-export type TaskTag = { key: string; value: string };
+export type TaskTag = { key: string; value: string; color?: TagColor };
+
+/** Named tag colors (picked in TaskDialog). No color = neutral chip. */
+export const TAG_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "pink", "gray"] as const;
+export type TagColor = (typeof TAG_COLORS)[number];
 
 export const tagSchema = z.object({
   key: z
@@ -27,6 +31,8 @@ export const tagSchema = z.object({
     .max(30, "Max 30 characters")
     .refine((k) => !k.includes(":"), "No colons"),
   value: z.string().trim().min(1, "Value required").max(60, "Max 60 characters"),
+  // Unknown colors are dropped rather than failing the whole tag.
+  color: z.enum(TAG_COLORS).optional().catch(undefined),
 });
 
 /** Tags with duplicate keys (case-insensitive) fail on the later duplicate. */
@@ -75,8 +81,8 @@ export function trackTaskChanges(prev: Task[], next: Task[], now = Date.now()): 
       events.push({ at: now, type: "note", change });
     }
     if (old.status !== t.status) events.push({ at: now, type: "status", from: old.status, to: t.status });
-    const oldTags = new Map((old.tags ?? []).map((g) => [g.key, g.value]));
-    const newTags = new Map((t.tags ?? []).map((g) => [g.key, g.value]));
+    const oldTags = new Map((old.tags ?? []).map((g) => [g.key, `${g.value}|${g.color ?? ""}`]));
+    const newTags = new Map((t.tags ?? []).map((g) => [g.key, `${g.value}|${g.color ?? ""}`]));
     for (const [key, value] of newTags) {
       if (!oldTags.has(key)) events.push({ at: now, type: "tag", key, change: "added" });
       else if (oldTags.get(key) !== value) events.push({ at: now, type: "tag", key, change: "changed" });
@@ -328,7 +334,10 @@ export function taskLink(task: Task, sessionName: string): string {
   if (task.note) p.set("note", task.note.slice(0, MAX_LINK_NOTE));
   if (task.note.length > MAX_LINK_NOTE) p.set("truncated", "1");
   if (task.createdAt) p.set("created", new Date(task.createdAt).toISOString());
-  for (const t of task.tags ?? []) p.append("tag", `${t.key}:${t.value}`); // key has no ":"
+  for (const t of task.tags ?? []) {
+    p.append("tag", `${t.key}:${t.value}`); // key has no ":"
+    if (t.color) p.append("tagcolor", `${t.key}:${t.color}`);
+  }
   return `/task?${p}`;
 }
 
@@ -340,7 +349,10 @@ const taskLinkSchema = z.object({
   session: one,
   created: one.pipe(z.iso.datetime().optional()).catch(undefined),
   truncated: one,
-  // Repeated `tag=key:value`; split on the first colon. Bad entries are dropped.
+  // Repeated `tag=key:value` (+ optional `tagcolor=key:red`); split on the first colon. Bad entries are dropped.
+  tagcolor: z
+    .preprocess((v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]), z.array(z.string()))
+    .catch([]),
   tag: z
     .preprocess((v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]), z.array(z.string()))
     .transform((list) =>
@@ -364,7 +376,7 @@ export type SharedTask = {
   descriptionTruncated: boolean;
   session: string | null;
   createdAt: string | null;
-  /** User-defined key/value labels, e.g. [{ key: "priority", value: "high" }]. Always present. */
+  /** User-defined key/value labels, e.g. [{ key: "priority", value: "high", color: "red" }] (color optional). Always present. */
   tags: TaskTag[];
   /** Images in the description (`![alt](src)` lines), with absolute URLs. Always present. */
   images: { alt: string; url: string }[];
@@ -388,7 +400,11 @@ export function parseTaskLink(
     descriptionTruncated: d.truncated === "1",
     session: d.session || null,
     createdAt: d.created ?? null,
-    tags: d.tag,
+    tags: d.tag.map((t) => {
+      const c = d.tagcolor.find((x) => x.startsWith(`${t.key}:`))?.slice(t.key.length + 1);
+      const color = tagSchema.shape.color.parse(c);
+      return color ? { ...t, color } : t;
+    }),
     images: noteImages(d.note ?? "").map((i) => ({ alt: i.alt, url: new URL(i.src, origin).href })),
   };
 }
