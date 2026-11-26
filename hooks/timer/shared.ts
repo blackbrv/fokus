@@ -9,7 +9,38 @@ export type TaskEvent =
   | { at: number; type: "created" }
   | { at: number; type: "renamed"; from: string; to: string }
   | { at: number; type: "note"; change: "added" | "edited" | "removed" }
-  | { at: number; type: "status"; from: TaskStatus; to: TaskStatus };
+  | { at: number; type: "status"; from: TaskStatus; to: TaskStatus }
+  | { at: number; type: "tag"; key: string; change: "added" | "changed" | "removed" };
+
+/**
+ * A user-defined label: both sides are free text the user picks, e.g.
+ * { key: "priority", value: "high" } or { key: "client", value: "Acme" }.
+ * Keys are unique per task (case-insensitive); there is no fixed list of keys.
+ */
+export type TaskTag = { key: string; value: string };
+
+export const tagSchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .min(1, "Key required")
+    .max(30, "Max 30 characters")
+    .refine((k) => !k.includes(":"), "No colons"),
+  value: z.string().trim().min(1, "Value required").max(60, "Max 60 characters"),
+});
+
+/** Tags with duplicate keys (case-insensitive) fail on the later duplicate. */
+export const tagsSchema = z.array(tagSchema).superRefine((tags, ctx) => {
+  const seen = new Set<string>();
+  tags.forEach((t, i) => {
+    const k = t.key.toLowerCase();
+    if (seen.has(k)) ctx.addIssue({ code: "custom", message: "Duplicate key", path: [i, "key"] });
+    seen.add(k);
+  });
+});
+
+/** Distinct tag keys used across `tasks`, for suggestions. */
+export const tagKeys = (tasks: Task[]) => [...new Set(tasks.flatMap((t) => (t.tags ?? []).map((g) => g.key)))];
 
 export type Task = {
   id: string;
@@ -18,6 +49,8 @@ export type Task = {
   status: TaskStatus;
   /** Missing on tasks created before activity tracking existed. */
   createdAt?: number;
+  /** Missing on tasks created before tags existed; treat as []. */
+  tags?: TaskTag[];
   history?: TaskEvent[];
 };
 
@@ -42,6 +75,15 @@ export function trackTaskChanges(prev: Task[], next: Task[], now = Date.now()): 
       events.push({ at: now, type: "note", change });
     }
     if (old.status !== t.status) events.push({ at: now, type: "status", from: old.status, to: t.status });
+    const oldTags = new Map((old.tags ?? []).map((g) => [g.key, g.value]));
+    const newTags = new Map((t.tags ?? []).map((g) => [g.key, g.value]));
+    for (const [key, value] of newTags) {
+      if (!oldTags.has(key)) events.push({ at: now, type: "tag", key, change: "added" });
+      else if (oldTags.get(key) !== value) events.push({ at: now, type: "tag", key, change: "changed" });
+    }
+    for (const key of oldTags.keys()) {
+      if (!newTags.has(key)) events.push({ at: now, type: "tag", key, change: "removed" });
+    }
     if (events.length === 0) return t;
     return { ...t, history: [...(old.history ?? []), ...events].slice(-MAX_HISTORY) };
   });
@@ -167,6 +209,7 @@ const sessionSchema = z.object({
       note: z.string().default(""),
       status: statusSchema,
       createdAt: z.number().optional(),
+      tags: tagsSchema.optional(),
       history: z
         .array(
           z.discriminatedUnion("type", [
@@ -174,6 +217,12 @@ const sessionSchema = z.object({
             z.object({ at: z.number(), type: z.literal("renamed"), from: z.string(), to: z.string() }),
             z.object({ at: z.number(), type: z.literal("note"), change: z.enum(["added", "edited", "removed"]) }),
             z.object({ at: z.number(), type: z.literal("status"), from: statusSchema, to: statusSchema }),
+            z.object({
+              at: z.number(),
+              type: z.literal("tag"),
+              key: z.string(),
+              change: z.enum(["added", "changed", "removed"]),
+            }),
           ]),
         )
         .optional(),
@@ -242,6 +291,23 @@ export function fmt(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+// ── Task images ─────────────────────────────────────────────────────────────
+// Images live inside the task note as Markdown: `![alt](src)`. `src` is either
+// `/img/<32 hex id>` (uploaded to Fokus, see lib/task-images.ts) or any https:// URL.
+// So people and AI agents add an image by writing that line into the note.
+
+/** Types the /img route will serve. Never SVG (it can carry scripts). */
+export const IMAGE_TYPES = ["image/webp", "image/jpeg", "image/png", "image/gif"];
+
+export const IMAGE_MD = /!\[([^\]\n]*)\]\((\/img\/[a-f0-9]{32}|https:\/\/[^\s)]+)\)/g;
+
+export const imageMarkdown = (alt: string, src: string) => `![${alt.replace(/[[\]\n]/g, "")}](${src})`;
+
+export const noteImages = (note: string) => [...note.matchAll(IMAGE_MD)].map((m) => ({ alt: m[1], src: m[2] }));
+
+/** The note without image lines, for one-line previews. */
+export const stripImages = (note: string) => note.replace(IMAGE_MD, "").replace(/\n{3,}/g, "\n\n").trim();
+
 // ── Shareable task links ────────────────────────────────────────────────────
 // The task travels in plain query params (/task?title=…&status=…&note=…), so
 // the link works for anyone without an account or database, and the URL itself
@@ -262,6 +328,7 @@ export function taskLink(task: Task, sessionName: string): string {
   if (task.note) p.set("note", task.note.slice(0, MAX_LINK_NOTE));
   if (task.note.length > MAX_LINK_NOTE) p.set("truncated", "1");
   if (task.createdAt) p.set("created", new Date(task.createdAt).toISOString());
+  for (const t of task.tags ?? []) p.append("tag", `${t.key}:${t.value}`); // key has no ":"
   return `/task?${p}`;
 }
 
@@ -273,6 +340,17 @@ const taskLinkSchema = z.object({
   session: one,
   created: one.pipe(z.iso.datetime().optional()).catch(undefined),
   truncated: one,
+  // Repeated `tag=key:value`; split on the first colon. Bad entries are dropped.
+  tag: z
+    .preprocess((v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]), z.array(z.string()))
+    .transform((list) =>
+      list.flatMap((raw) => {
+        const i = raw.indexOf(":");
+        const r = tagSchema.safeParse({ key: raw.slice(0, i), value: raw.slice(i + 1) });
+        return i > 0 && r.success ? [r.data] : [];
+      }),
+    )
+    .catch([]),
 });
 
 /** The payload an AI agent (or anyone) gets from a task link. */
@@ -286,10 +364,17 @@ export type SharedTask = {
   descriptionTruncated: boolean;
   session: string | null;
   createdAt: string | null;
+  /** User-defined key/value labels, e.g. [{ key: "priority", value: "high" }]. Always present. */
+  tags: TaskTag[];
+  /** Images in the description (`![alt](src)` lines), with absolute URLs. Always present. */
+  images: { alt: string; url: string }[];
 };
 
-/** Parses /task search params; null when the link has no usable title. */
-export function parseTaskLink(params: Record<string, string | string[] | undefined>): SharedTask | null {
+/** Parses /task search params; null when the link has no usable title. `origin` resolves /img/ URLs. */
+export function parseTaskLink(
+  params: Record<string, string | string[] | undefined>,
+  origin = "http://localhost",
+): SharedTask | null {
   const r = taskLinkSchema.safeParse(params);
   if (!r.success) return null;
   const d = r.data;
@@ -303,5 +388,7 @@ export function parseTaskLink(params: Record<string, string | string[] | undefin
     descriptionTruncated: d.truncated === "1",
     session: d.session || null,
     createdAt: d.created ?? null,
+    tags: d.tag,
+    images: noteImages(d.note ?? "").map((i) => ({ alt: i.alt, url: new URL(i.src, origin).href })),
   };
 }

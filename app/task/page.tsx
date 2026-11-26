@@ -1,27 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { format } from "date-fns";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StatusDot } from "@/components/session/BoardTaskCardContent";
-import { parseTaskLink } from "@/hooks/timer/shared";
+import { StatusDot, TagChips } from "@/components/session/BoardTaskCardContent";
+import { parseTaskLink, stripImages } from "@/hooks/timer/shared";
+import { NoteContent } from "@/components/session/NoteContent";
 import { CopyButton } from "./CopyButton";
 
 // Server-rendered on purpose (the one non-"use client" page): the task comes
 // from the URL, so people, link previews and AI agents all get real HTML.
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
+async function load(searchParams: Props["searchParams"]) {
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "localhost"}`;
+  return parseTaskLink(await searchParams, origin);
+}
+
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const task = parseTaskLink(await searchParams);
+  const task = await load(searchParams);
   const title = task ? `${task.title} · Task` : "Shared task"; // layout appends " | Fokus"
-  const description = task?.description.replace(/\s+/g, " ").slice(0, 160) || "A task shared from Fokus.";
-  return { title, description, robots: { index: false }, openGraph: { title, description }, twitter: { title, description } };
+  const description = stripImages(task?.description ?? "").replace(/\s+/g, " ").slice(0, 160) || "A task shared from Fokus.";
+  const images = task?.images.slice(0, 1).map((i) => i.url);
+  return { title, description, robots: { index: false }, openGraph: { title, description, images }, twitter: { title, description, images } };
 }
 
 const label = "mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground";
 
 export default async function TaskPage({ searchParams }: Props) {
-  const task = parseTaskLink(await searchParams);
+  const task = await load(searchParams);
 
   if (!task) {
     return (
@@ -52,6 +61,7 @@ export default async function TaskPage({ searchParams }: Props) {
               <time dateTime={task.createdAt}>Created {format(new Date(task.createdAt), "MMM d, yyyy")}</time>
             )}
           </div>
+          <TagChips tags={task.tags} className="text-foreground [&>li]:text-xs [&>li]:px-2 [&>li]:py-1" />
         </header>
 
         <section
@@ -63,10 +73,10 @@ export default async function TaskPage({ searchParams }: Props) {
         >
           <h2 className={label}>Description</h2>
           {task.description ? (
-            <p className="text-base leading-relaxed whitespace-pre-wrap break-words text-card-foreground">
-              {task.description}
-              {task.descriptionTruncated && <span className="text-muted-foreground"> … (shortened to fit the link)</span>}
-            </p>
+            <>
+              <NoteContent note={task.description} className="text-base leading-relaxed text-card-foreground" />
+              {task.descriptionTruncated && <p className="text-muted-foreground">… (shortened to fit the link)</p>}
+            </>
           ) : (
             <p className="text-muted-foreground italic">No description.</p>
           )}

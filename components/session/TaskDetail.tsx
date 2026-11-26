@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Link2, Maximize2, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { copyTaskLink, StatusDot, STATUS_META } from "./BoardTaskCardContent";
+import { copyTaskLink, StatusDot, STATUS_META, TagChips } from "./BoardTaskCardContent";
+import { NoteContent } from "./NoteContent";
 import {
   formatTaskTime,
   type Task,
@@ -39,6 +40,12 @@ function describe(e: TaskEvent): ReactNode {
       return (
         <>
           Moved from <StatusLabel status={e.from} /> to <StatusLabel status={e.to} />
+        </>
+      );
+    case "tag":
+      return (
+        <>
+          Tag <span className="font-semibold">{e.key}</span> {e.change}
         </>
       );
   }
@@ -135,16 +142,24 @@ export function TaskDetail({
 
         <div>
           <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Tags
+          </h3>
+          {task.tags?.length ? (
+            <TagChips tags={task.tags} />
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No tags. Add them with Edit.</p>
+          )}
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Note
           </h3>
-          <p
-            className={cn(
-              "text-sm leading-relaxed whitespace-pre-wrap break-words",
-              !task.note && "text-muted-foreground italic",
-            )}
-          >
-            {task.note || "No note added."}
-          </p>
+          {task.note ? (
+            <NoteContent note={task.note} className="text-sm leading-relaxed" />
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No note added.</p>
+          )}
         </div>
 
         <div>
