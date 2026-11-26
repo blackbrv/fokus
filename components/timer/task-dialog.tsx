@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ImagePlus, Plus, X } from "lucide-react";
+import { Ban, ImagePlus, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,7 +19,11 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { tagsSchema } from "@/hooks/timer/shared";
+import { Popover as PopoverPrimitive } from "radix-ui";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TAG_COLOR_CLASS } from "@/components/session/BoardTaskCardContent";
+import { cn } from "@/lib/utils";
+import { TAG_COLORS, tagsSchema } from "@/hooks/timer/shared";
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Task title is required"),
@@ -212,6 +216,52 @@ export function TaskDialog({
               </datalist>
               {tags.fields.map((row, i) => (
                 <div key={row.id} className="flex items-start gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`tags.${i}.color`}
+                    render={({ field }) => (
+                      <Popover>
+                        <PopoverTrigger
+                          aria-label={`Tag color: ${field.value ?? "none"}`}
+                          title="Tag color"
+                          className={cn(
+                            "mt-1.5 size-7 shrink-0 rounded-md border border-dashed border-foreground/30 cursor-pointer",
+                            field.value && [TAG_COLOR_CLASS[field.value], "border-solid"],
+                          )}
+                        />
+                        <PopoverContent
+                          align="start"
+                          className="flex w-auto gap-1.5 p-2"
+                          // Escape closes just the picker, not the whole task dialog (window listener above).
+                          onKeyDown={(e) => e.key === "Escape" && e.stopPropagation()}
+                        >
+                          <PopoverPrimitive.Close
+                            type="button"
+                            onClick={() => field.onChange(undefined)}
+                            aria-label="No color"
+                            aria-pressed={!field.value}
+                            className="flex size-6 items-center justify-center rounded-md border text-foreground/50 cursor-pointer aria-pressed:ring-2 aria-pressed:ring-foreground/40"
+                          >
+                            <Ban size={12} />
+                          </PopoverPrimitive.Close>
+                          {TAG_COLORS.map((c) => (
+                            <PopoverPrimitive.Close
+                              key={c}
+                              type="button"
+                              onClick={() => field.onChange(c)}
+                              aria-label={c}
+                              title={c}
+                              aria-pressed={field.value === c}
+                              className={cn(
+                                "size-6 rounded-md border cursor-pointer aria-pressed:ring-2 aria-pressed:ring-foreground/40",
+                                TAG_COLOR_CLASS[c],
+                              )}
+                            />
+                          ))}
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name={`tags.${i}.key`}
